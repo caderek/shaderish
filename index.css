@@ -1,0 +1,25 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: #222;
+  display: grid;
+  place-content: center;
+  color: #fafafa;
+}
+
+canvas {
+  --scale: 1;
+  --size: 256;
+  background: black;
+  width: calc(1px * var(--size) * var(--scale));
+  aspect-ratio: 1/1;
+  image-rendering: pixelated;
+}
