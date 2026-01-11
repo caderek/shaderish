@@ -1,9 +1,10 @@
+import { toClipspace } from "./lib/normalize.js";
 import {
 	circleFragment,
 	circleBouncingFragment,
 } from "./shaders/circle-fragment.js";
 
-const size = 360; // 32;
+const size = 256; // 32;
 const scale = 1; // 24
 
 const canvas = document.querySelector("canvas");
@@ -23,16 +24,11 @@ function step(shader, uniforms) {
 	for (let i = 0; i < bufferSize; i += 4) {
 		const pos = i / 4;
 		const x = pos % size;
-		const y = Math.floor(pos / size);
+		const y = Math.trunc(pos / size);
 		const clipSpaceX = (x + 0.5) / (size / 2) - 1;
 		const clipSpaceY = 1 - (y + 0.5) / (size / 2);
 
-		const [r, g, b, a] = shader(clipSpaceX, clipSpaceY, uniforms);
-
-		data[i] = r * 255;
-		data[i + 1] = g * 255;
-		data[i + 2] = b * 255;
-		data[i + 3] = a * 255;
+		data.set(shader(clipSpaceX, clipSpaceY, uniforms), i);
 	}
 }
 
@@ -64,10 +60,20 @@ let prev = 0;
 //
 // 	return [alpha, alpha, alpha, 1];
 // }
+//
+
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener("mousemove", (e) => {
+	mouseX = toClipspace(e.clientX, 1920);
+	mouseY = toClipspace(e.clientY, 1080);
+});
 
 function loop(elapsed = 0) {
 	const start = performance.now();
-	step(circleBouncingFragment, { t: elapsed });
+
+	step(circleBouncingFragment, { t: elapsed, mouseX, mouseY });
 
 	if (n % 10 === 0) {
 		const taken = performance.now() - start;
