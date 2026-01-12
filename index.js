@@ -51,6 +51,8 @@ window.addEventListener("mousemove", (e) => {
 	mouseY = toClipspace(e.clientY, 1080);
 });
 
+console.log({ crossOriginIsolated });
+
 const maxThreads = navigator.hardwareConcurrency ?? 4;
 const workersCount = crossOriginIsolated ? maxThreads - 1 : 0;
 const chunkSize = Math.trunc(framebuffer.byteLength / (workersCount + 1));
