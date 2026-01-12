@@ -1,0 +1,28 @@
+{
+	"name": "shaderish",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"directories": {
+		"doc": "docs",
+		"lib": "lib"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/caderek/shaderish.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "module",
+	"bugs": {
+		"url": "https://github.com/caderek/shaderish/issues"
+	},
+	"homepage": "https://github.com/caderek/shaderish#readme",
+	"devDependencies": {
+		"vite": "^7.3.1"
+	}
+}
