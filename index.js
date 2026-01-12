@@ -13,7 +13,7 @@ const fragment = singularityFragment;
 // const fragment = accretionFragment;
 
 const MIN_SIZE = 720 / devicePixelRatio;
-const size = 360;
+const size = 180;
 const scale = size > MIN_SIZE ? 1 : MIN_SIZE / size;
 
 const canvas = document.querySelector("canvas", {
