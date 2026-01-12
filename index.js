@@ -13,7 +13,7 @@ const fragment = singularityFragment;
 // const fragment = accretionFragment;
 
 const MIN_SIZE = 720 / devicePixelRatio;
-const size = 180;
+const size = 360;
 const scale = size > MIN_SIZE ? 1 : MIN_SIZE / size;
 
 const canvas = document.querySelector("canvas", {
@@ -116,7 +116,7 @@ async function loop(elapsed = 0) {
 		const taken = performance.now() - start;
 		const time = elapsed - prev;
 		const fps = time > 0 ? 1000 / time : 0;
-		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount + 1}`;
+		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount + 1}, Res: ${size}px`;
 		n = 0;
 	}
 
