@@ -1,4 +1,6 @@
-import { Color } from "../lib/vec";
+export function Color(r, g, b, a) {
+	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
+}
 
 /**
  * Singularity" by @XorDev (JS Port)
@@ -7,7 +9,7 @@ import { Color } from "../lib/vec";
  * @param {object} uniforms - { t: number }
  * @returns {Float64Array} [r, g, b, a]
  */
-export function singularityFragment(x, y, uniforms) {
+export function fragment(x, y, uniforms) {
 	const t = uniforms.t;
 
 	// 1. Coordinates and Setup

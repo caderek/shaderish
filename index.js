@@ -1,20 +1,15 @@
 import { toClipspace } from "./lib/normalize.js";
 import { runShader } from "./lib/runShader.js";
-import { accretionFragment } from "./shaders/accretion-fragment.js";
-import {
-	circleFragment,
-	circleBouncingFragment,
-} from "./shaders/circle-fragment.js";
-import { plasmaFragment } from "./shaders/plasma-fragment.js";
-import { singularityFragment } from "./shaders/singularity-fragment.js";
 
-// const fragment = plasmaFragment;
-const fragment = singularityFragment;
-// const fragment = accretionFragment;
-
-const MIN_SIZE = 720 / devicePixelRatio;
-const size = 320;
+const MAX_WORKERS = Infinity;
+const MIN_SIZE = (360 * 2) / devicePixelRatio;
+const size = 360;
 const scale = size > MIN_SIZE ? 1 : MIN_SIZE / size;
+
+const urls = await Promise.all(
+	["plasma", "singularity", "accretion"].map(createShaderUrl),
+);
+const url = urls[0];
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,
@@ -28,6 +23,19 @@ canvas.style.setProperty("--scale", scale);
 
 const fpsOut = document.getElementById("fps");
 const ctx = canvas.getContext("2d");
+
+async function createShaderUrl(name) {
+	const blob = await fetch(`/shaders/${name}.js`).then((res) => res.blob());
+	const file = new File([blob], "shader.js", {
+		type: "application/javascript",
+	});
+
+	return URL.createObjectURL(file);
+}
+
+function randomElement(items) {
+	return items[Math.floor(Math.random() * items.length)];
+}
 
 const bufferSize = size ** 2 * 4;
 const buffer = crossOriginIsolated
@@ -51,11 +59,16 @@ window.addEventListener("mousemove", (e) => {
 	mouseY = toClipspace(e.clientY, 1080);
 });
 
-console.log({ crossOriginIsolated });
-
 const maxThreads = navigator.hardwareConcurrency ?? 4;
-const workersCount = crossOriginIsolated ? maxThreads - 1 : 0;
-const chunkSize = Math.trunc(framebuffer.byteLength / (workersCount + 1));
+const workersCount = Math.min(
+	crossOriginIsolated ? maxThreads - 1 : 0,
+	MAX_WORKERS,
+);
+const cacheLines = Math.ceil(framebuffer.byteLength / 128);
+const chunkSize = Math.ceil(cacheLines / (workersCount + 1)) * 128;
+console.log({ crossOriginIsolated });
+console.log({ threads: workersCount + 1 });
+console.log({ bufferSize, chunkSize });
 
 const workers = Array.from(
 	{ length: workersCount },
@@ -63,35 +76,58 @@ const workers = Array.from(
 		new Worker(new URL("workers/run.js", import.meta.url), { type: "module" }),
 );
 let rendered = 0;
-let end = null;
+let loaded = 0;
+let endRender = null;
+let endLoad = null;
+let doneLoad = new Promise((resolve) => {
+	endLoad = resolve;
+});
+
+const shader = (await import(url)).fragment;
 
 workers.forEach((worker) => {
 	worker.addEventListener("message", (e) => {
-		rendered++;
+		switch (e.data) {
+			case "rendered": {
+				rendered++;
 
-		if (rendered === workersCount) {
-			end();
+				if (rendered === workersCount) {
+					endRender();
+				}
+				break;
+			}
+			case "loaded": {
+				loaded++;
+
+				if (loaded === workersCount) {
+					endLoad();
+				}
+				break;
+			}
 		}
 	});
 
 	worker.postMessage(["init", buffer, size]);
+	worker.postMessage(["loadShader", url]);
 });
 
 async function loop(elapsed = 0) {
+	if (workersCount > 0) {
+		await doneLoad;
+	}
 	const start = performance.now();
 	let done;
 
 	if (workersCount > 0) {
 		done = new Promise((resolve) => {
-			end = resolve;
+			endRender = resolve;
 		});
 
 		workers.forEach((worker, i) =>
 			worker.postMessage([
 				"runShader",
 				{ t: elapsed / 1000 },
-				i * chunkSize,
-				i * chunkSize + chunkSize,
+				[[i * chunkSize, i * chunkSize + chunkSize]],
 			]),
 		);
 	}
@@ -99,7 +135,7 @@ async function loop(elapsed = 0) {
 	runShader(
 		framebuffer,
 		size,
-		fragment,
+		shader,
 		{
 			t: elapsed / 1000, // in seconds as most shaders are done!
 			mouseX,

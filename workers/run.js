@@ -1,12 +1,10 @@
 import { runShader } from "../lib/runShader.js";
-import { singularityFragment } from "../shaders/singularity-fragment.js";
-import { accretionFragment } from "../shaders/accretion-fragment.js";
-const shader = singularityFragment;
-// const shader = accretionFragment;
+
+let shader = null;
 let framebuffer = null;
 let size = 0;
 
-onmessage = (e) => {
+onmessage = async (e) => {
 	const [type, ...data] = e.data;
 
 	switch (type) {
@@ -14,12 +12,26 @@ onmessage = (e) => {
 			const [buffer, s] = data;
 			framebuffer = new Uint8ClampedArray(buffer);
 			size = s;
-			console.log("Configured shared framebuffer");
+			break;
+		}
+		case "loadShader": {
+			const [shaderPath] = data;
+			shader = (await import(shaderPath)).fragment;
+			self.postMessage("loaded");
+
 			break;
 		}
 		case "runShader": {
-			const [uniforms, from, to] = data;
-			runShader(framebuffer, size, shader, uniforms, from, to);
+			if (!shader) {
+				throw new Error("No shader provided");
+			}
+
+			const [uniforms, ranges] = data;
+
+			for (const [from, to] of ranges) {
+				runShader(framebuffer, size, shader, uniforms, from, to);
+			}
+
 			self.postMessage("rendered");
 
 			break;

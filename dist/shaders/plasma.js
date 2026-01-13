@@ -1,4 +1,7 @@
-import { Color } from "../lib/vec";
+export function Color(r, g, b, a) {
+	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
+}
+
 /**
  * Deobfuscated Plasma Shader (JS Port) by @XorDev
  * Source: x.com/XorDev/status/1894123951401378051
@@ -7,7 +10,7 @@ import { Color } from "../lib/vec";
  * @param {object} uniforms - { t: number }
  * @returns {Float64Array} [r, g, b, a]
  */
-export function plasmaFragment(x, y, uniforms) {
+export function fragment(x, y, uniforms) {
 	const t = uniforms.t;
 
 	// 1. Z-Depth / Vignette
