@@ -1,3 +1,7 @@
+export function Color(r, g, b, a) {
+	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
+}
+
 import { toClipspace, normalize } from "../lib/normalize";
 import { Color } from "../lib/vec";
 

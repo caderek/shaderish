@@ -9,8 +9,8 @@ export function Color(r, g, b, a) {
  * @param {object} uniforms - { t: number }
  * @returns {Float64Array} [r, g, b, a]
  */
-export function fragment(x, y, uniforms) {
-	const t = uniforms.t;
+export function fragment(x, y, { t, w, h }) {
+	x = x * (w / h);
 
 	// Raymarch depth, Step distance, Iterator
 	let z = 0;

@@ -3,15 +3,14 @@ export function Color(r, g, b, a) {
 }
 
 /**
- * Singularity" by @XorDev (JS Port)
+ * "Singularity" by @XorDev (JS Port)
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
- * @param {object} uniforms - { t: number }
- * @returns {Float64Array} [r, g, b, a]
+ * @param {object} uniforms - { t: number, w: number, h: number }
+ * @returns {Uint8Array} [r, g, b, a]
  */
-export function fragment(x, y, uniforms) {
-	const t = uniforms.t;
-
+export function fragment(x, y, { t, w, h }) {
+	x = x * (w / h);
 	// 1. Coordinates and Setup
 	// GLSL: p = (F+F - r) / r.y / .7;
 	// Since input x,y is already [-1, 1], we just divide by 0.7
