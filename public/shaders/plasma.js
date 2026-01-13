@@ -7,12 +7,11 @@ export function Color(r, g, b, a) {
  * Source: x.com/XorDev/status/1894123951401378051
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
- * @param {object} uniforms - { t: number }
- * @returns {Float64Array} [r, g, b, a]
+ * @param {object} uniforms - { t: number, w: number, h: number }
+ * @returns {Uint8Array} [r, g, b, a]
  */
-export function fragment(x, y, uniforms) {
-	const t = uniforms.t;
-
+export function fragment(x, y, { t, w, h }) {
+	x = x * (w / h);
 	// 1. Z-Depth / Vignette
 	const dotUV = x * x + y * y;
 	const zVal = 4.0 - 4.0 * Math.abs(0.7 - dotUV);

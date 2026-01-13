@@ -2,7 +2,6 @@ import { runShader } from "../lib/runShader.js";
 
 let shader = null;
 let framebuffer = null;
-let size = 0;
 
 onmessage = async (e) => {
 	const [type, ...data] = e.data;
@@ -11,7 +10,6 @@ onmessage = async (e) => {
 		case "init": {
 			const [buffer, s] = data;
 			framebuffer = new Uint8ClampedArray(buffer);
-			size = s;
 			break;
 		}
 		case "loadShader": {
@@ -29,7 +27,7 @@ onmessage = async (e) => {
 			const [uniforms, ranges] = data;
 
 			for (const [from, to] of ranges) {
-				runShader(framebuffer, size, shader, uniforms, from, to);
+				runShader(framebuffer, shader, uniforms, from, to);
 			}
 
 			self.postMessage("rendered");

@@ -17,14 +17,14 @@ body {
 main {
   margin: auto;
   text-align: center;
-  padding: 1rem;
+  padding: 1rem 0;
 }
 
 canvas {
-  --scale: 1;
-  --size: 256;
+  --scale: 2;
+  --width: 640;
   background: black;
-  width: calc(1px * var(--size) * var(--scale));
-  aspect-ratio: 1/1;
+  width: calc(1px * var(--width) * var(--scale));
+  aspect-ratio: 16/9;
   image-rendering: pixelated;
 }

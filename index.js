@@ -1,13 +1,18 @@
 import { toClipspace } from "./lib/normalize.js";
 import { runShader } from "./lib/runShader.js";
 
+const ANIMATE = true;
 const MAX_WORKERS = Infinity;
-const MIN_SIZE = (360 * 2) / devicePixelRatio;
-const size = 360;
-const scale = size > MIN_SIZE ? 1 : MIN_SIZE / size;
+const MIN_SIZE = (640 * 2) / devicePixelRatio;
+const adjust = (size) => size / 2;
+const w = adjust(640);
+const h = adjust(360);
+const scale = MIN_SIZE / w;
 
 const urls = await Promise.all(
-	["plasma", "singularity", "accretion"].map(createShaderUrl),
+	["plasma", "singularity", "accretion", "rainbow", "warp"].map(
+		createShaderUrl,
+	),
 );
 const url = urls[0];
 
@@ -16,9 +21,9 @@ const canvas = document.querySelector("canvas", {
 	willReadFrequently: false,
 });
 
-canvas.width = size;
-canvas.height = size;
-canvas.style.setProperty("--size", size);
+canvas.width = w;
+canvas.height = h;
+canvas.style.setProperty("--width", w);
 canvas.style.setProperty("--scale", scale);
 
 const fpsOut = document.getElementById("fps");
@@ -37,7 +42,7 @@ function randomElement(items) {
 	return items[Math.floor(Math.random() * items.length)];
 }
 
-const bufferSize = size ** 2 * 4;
+const bufferSize = w * h * 4;
 const buffer = crossOriginIsolated
 	? new SharedArrayBuffer(bufferSize)
 	: new ArrayBuffer(bufferSize);
@@ -46,7 +51,7 @@ const framebuffer = new Uint8ClampedArray(buffer);
 const staging = crossOriginIsolated
 	? new Uint8ClampedArray(bufferSize)
 	: framebuffer;
-const frame = new ImageData(staging, size, size);
+const frame = new ImageData(staging, w, h);
 
 let n = 0;
 let prev = 0;
@@ -107,7 +112,7 @@ workers.forEach((worker) => {
 		}
 	});
 
-	worker.postMessage(["init", buffer, size]);
+	worker.postMessage(["init", buffer]);
 	worker.postMessage(["loadShader", url]);
 });
 
@@ -126,7 +131,7 @@ async function loop(elapsed = 0) {
 		workers.forEach((worker, i) =>
 			worker.postMessage([
 				"runShader",
-				{ t: elapsed / 1000 },
+				{ t: elapsed / 1000, w, h },
 				[[i * chunkSize, i * chunkSize + chunkSize]],
 			]),
 		);
@@ -134,10 +139,11 @@ async function loop(elapsed = 0) {
 
 	runShader(
 		framebuffer,
-		size,
 		shader,
 		{
 			t: elapsed / 1000, // in seconds as most shaders are done!
+			w,
+			h,
 			mouseX,
 			mouseY,
 		},
@@ -154,7 +160,7 @@ async function loop(elapsed = 0) {
 		const taken = performance.now() - start;
 		const time = elapsed - prev;
 		const fps = time > 0 ? 1000 / time : 0;
-		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount + 1}, Res: ${size}px`;
+		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount + 1}, Res: ${w}x${h}px`;
 		n = 0;
 	}
 
@@ -163,7 +169,9 @@ async function loop(elapsed = 0) {
 
 	staging.set(framebuffer);
 	ctx.putImageData(frame, 0, 0);
-	requestAnimationFrame(loop);
+	if (ANIMATE) {
+		requestAnimationFrame(loop);
+	}
 }
 
 loop();

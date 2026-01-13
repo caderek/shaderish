@@ -5,6 +5,7 @@ export default defineConfig({
 		headers: {
 			"Cross-Origin-Opener-Policy": "same-origin",
 			"Cross-Origin-Embedder-Policy": "require-corp;credentialless",
+			"Content-Security-Policy": "connect-src 'self'; worker-src 'self';",
 		},
 	},
 });
