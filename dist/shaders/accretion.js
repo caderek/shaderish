@@ -1,6 +1,4 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
-}
+const fragColor = new Float32Array(4);
 
 /**
  * "Accretion" by @XorDev (JS Port)
@@ -84,10 +82,10 @@ export function fragment(x, y, { t, w, h }) {
 
 	// 6. Final Tanh Tonemap (O * O / 400)
 	const exposure = 400.0;
-	return Color(
-		Math.tanh((or * or) / exposure),
-		Math.tanh((og * og) / exposure),
-		Math.tanh((ob * ob) / exposure),
-		Math.tanh((oa * oa) / exposure),
-	);
+
+	fragColor[0] = Math.tanh((or * or) / exposure);
+	fragColor[1] = Math.tanh((og * og) / exposure);
+	fragColor[2] = Math.tanh((ob * ob) / exposure);
+	fragColor[3] = Math.tanh((oa * oa) / exposure);
+	return fragColor;
 }

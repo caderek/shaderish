@@ -1,11 +1,4 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([
-		Math.max(0, Math.min(255, r * 255)),
-		Math.max(0, Math.min(255, g * 255)),
-		Math.max(0, Math.min(255, b * 255)),
-		Math.max(0, Math.min(255, a * 255)),
-	]);
-}
+const fragColor = new Float32Array(4);
 
 /**
  * "Rainbow Showoff" by @akufishi (JS Port)
@@ -74,5 +67,9 @@ export function fragment(x, y, { t, w, h }) {
 		-Math.pow(Math.abs(uvY - 0.5), 6.0) / Math.pow(2.0 * 0.05, 2.0),
 	);
 
-	return Color(r * fade, g * fade, b * fade, 1.0);
+	fragColor[0] = r * fade;
+	fragColor[1] = g * fade;
+	fragColor[2] = b * fade;
+	fragColor[3] = 1.0;
+	return fragColor;
 }
