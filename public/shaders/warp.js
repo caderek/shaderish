@@ -1,11 +1,12 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([
-		Math.max(0, Math.min(255, r * 255)),
-		Math.max(0, Math.min(255, g * 255)),
-		Math.max(0, Math.min(255, b * 255)),
-		Math.max(0, Math.min(255, a * 255)),
-	]);
-}
+const fragColor = new Float32Array(4);
+// export function Color(r, g, b, a) {
+// 	return new Uint8Array([
+// 		Math.max(0, Math.min(255, r * 255)),
+// 		Math.max(0, Math.min(255, g * 255)),
+// 		Math.max(0, Math.min(255, b * 255)),
+// 		Math.max(0, Math.min(255, a * 255)),
+// 	]);
+// }
 
 // --- Helper Functions ---
 
@@ -230,5 +231,9 @@ export function fragment(x, y, { t, w, h }) {
 	colB += colB * refPow * 1.0 * 3.0;
 
 	// 8. Gamma Correction (sqrt)
-	return Color(Math.sqrt(colR), Math.sqrt(colG), Math.sqrt(colB), 1.0);
+	fragColor[0] = Math.sqrt(colR);
+	fragColor[1] = Math.sqrt(colG);
+	fragColor[2] = Math.sqrt(colB);
+	fragColor[3] = 1.0;
+	return fragColor;
 }

@@ -3,7 +3,7 @@ import { runShader } from "./lib/runShader.js";
 
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
-const ANIMATE = true;
+const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
 const adjust = (size) => size / 1;
@@ -12,11 +12,11 @@ const h = adjust(360);
 const scale = MIN_SIZE / w;
 
 const urls = await Promise.all(
-	["plasma", "singularity", "accretion", "rainbow", "warp"].map(
+	["plasma", "singularity", "rainbow", "warp" /*"accretion"*/].map(
 		createShaderUrl,
 	),
 );
-const url = urls[0];
+const url = urls[3];
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,
@@ -71,11 +71,12 @@ const workersCount = Math.min(
 	crossOriginIsolated ? maxThreads - 1 : 0,
 	MAX_WORKERS,
 );
-const cacheLines = Math.ceil(framebuffer.byteLength / 128);
-const chunkSize = Math.ceil(cacheLines / (workersCount + 1)) * 128;
+const tileByteSize = 8 ** 2 * 4;
+const tilesCount = Math.ceil(framebuffer.byteLength / tileByteSize); // 256 is 2 to 4 cache lines depending on procesor
+const tilesPerWorker = Math.ceil(tilesCount / (workersCount + 1));
 console.log({ crossOriginIsolated });
 console.log({ threads: workersCount + 1 });
-console.log({ bufferSize, chunkSize });
+console.log({ bufferSize, tilesPerWorker });
 
 const workers = Array.from(
 	{ length: workersCount },
@@ -134,7 +135,7 @@ async function loop(elapsed = 0) {
 			worker.postMessage([
 				"runShader",
 				{ t: elapsed / 1000, w, h },
-				[[i * chunkSize, i * chunkSize + chunkSize]],
+				[[i * tilesPerWorker, i * tilesPerWorker + tilesPerWorker]],
 			]),
 		);
 	}
@@ -149,8 +150,8 @@ async function loop(elapsed = 0) {
 			mouseX,
 			mouseY,
 		},
-		chunkSize * workersCount,
-		framebuffer.byteLength,
+		tilesPerWorker * workersCount,
+		tilesCount,
 	);
 
 	if (workersCount > 0) {

@@ -1,6 +1,4 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
-}
+const fragColor = new Float32Array(4);
 
 /**
  * "Singularity" by @XorDev (JS Port)
@@ -155,10 +153,9 @@ export function fragment(x, y, { t, w, h }) {
 		return 1.0 - Math.exp(inner);
 	}
 
-	return Color(
-		computeChannel(e_r, den1_r),
-		computeChannel(e_g, den1_g),
-		computeChannel(e_b, den1_b),
-		computeChannel(e_a, den1_a), // Usually 1.0 in this shader logic but we calc it
-	);
+	fragColor[0] = computeChannel(e_r, den1_r);
+	fragColor[1] = computeChannel(e_g, den1_g);
+	fragColor[2] = computeChannel(e_b, den1_b);
+	fragColor[3] = computeChannel(e_a, den1_a); // Usually 1.0 in this shader logic but we calc it
+	return fragColor;
 }
