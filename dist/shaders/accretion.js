@@ -6,8 +6,8 @@ export function Color(r, g, b, a) {
  * "Accretion" by @XorDev (JS Port)
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
- * @param {object} uniforms - { t: number }
- * @returns {Float64Array} [r, g, b, a]
+ * @param {object} uniforms - { t: number, w: number, h: number }
+ * @returns {Uint8Array} [r, g, b, a]
  */
 export function fragment(x, y, { t, w, h }) {
 	x = x * (w / h);
