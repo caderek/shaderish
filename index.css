@@ -28,3 +28,8 @@ canvas {
   aspect-ratio: 16/9;
   image-rendering: pixelated;
 }
+
+footer {
+  text-align: center;
+  opacity: 0.5;
+}

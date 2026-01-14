@@ -1,6 +1,8 @@
 import { toClipspace } from "./lib/normalize.js";
 import { runShader } from "./lib/runShader.js";
 
+document.querySelector("footer").textContent = `v${APP_VERSION}`;
+
 const ANIMATE = true;
 const MAX_WORKERS = Infinity;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
