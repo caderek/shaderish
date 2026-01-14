@@ -4,7 +4,7 @@ import { runShader } from "./lib/runShader.js";
 const ANIMATE = true;
 const MAX_WORKERS = Infinity;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
-const adjust = (size) => size / 2;
+const adjust = (size) => size / 1;
 const w = adjust(640);
 const h = adjust(360);
 const scale = MIN_SIZE / w;

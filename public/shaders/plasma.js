@@ -1,6 +1,4 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
-}
+const fragColor = new Float32Array(4);
 
 /**
  * Deobfuscated Plasma Shader (JS Port) by @XorDev
@@ -11,14 +9,14 @@ export function Color(r, g, b, a) {
  * @returns {Uint8Array} [r, g, b, a]
  */
 export function fragment(x, y, { t, w, h }) {
-	x = x * (w / h);
+	x = Math.fround(x * (w / h));
 	// 1. Z-Depth / Vignette
-	const dotUV = x * x + y * y;
-	const zVal = 4.0 - 4.0 * Math.abs(0.7 - dotUV);
+	const dotUV = Math.fround(x * x + y * y);
+	const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));
 
 	// 2. Initial Fluid Coordinates
-	let f_x = x * zVal;
-	let f_y = y * zVal;
+	let f_x = Math.fround(x * zVal);
+	let f_y = Math.fround(y * zVal);
 
 	let r = 0,
 		g = 0,
@@ -26,19 +24,19 @@ export function fragment(x, y, { t, w, h }) {
 		a = 0;
 
 	// 3. The 8-Step Iteration Loop
-	for (let iter = 1.0; iter <= 8.0; iter++) {
+	for (let iter = 1; iter <= 8; iter++) {
 		// Domain Warping Step
 		// Note the axis swap (f_y used for new f_x)
 		const arg_x = f_y * iter + t;
 		const arg_y = f_x * iter + iter + t;
 
-		f_x += Math.cos(arg_x) / iter + 0.7;
-		f_y += Math.cos(arg_y) / iter + 0.7;
+		f_x += Math.fround(Math.cos(arg_x) / iter + 0.7);
+		f_y += Math.fround(Math.cos(arg_y) / iter + 0.7);
 
 		// Cumulative Color Calculation
-		const intensity = Math.abs(f_x - f_y);
-		const sin_fx = Math.sin(f_x) + 1.0;
-		const sin_fy = Math.sin(f_y) + 1.0;
+		const intensity = Math.fround(Math.abs(f_x - f_y));
+		const sin_fx = Math.fround(Math.sin(f_x) + 1.0);
+		const sin_fy = Math.fround(Math.sin(f_y) + 1.0);
 
 		// Map sin results to RGBA channels (xyyx swizzle)
 		r += sin_fx * intensity;
@@ -49,12 +47,14 @@ export function fragment(x, y, { t, w, h }) {
 
 	// 4. Final Gradient and Tonemapping
 	// We use Math.exp for the vertical color shift and Math.tanh to clamp the glow
-	const commonExp = zVal - 4.0;
+	const commonExp = Math.fround(zVal - 4.0);
 
-	return Color(
-		Math.tanh((7.0 * Math.exp(commonExp + y)) / r), // Red (y * -1.0)
-		Math.tanh((7.0 * Math.exp(commonExp - y)) / g), // Green (y * 1.0)
-		Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b), // Blue (y * 2.0)
-		Math.tanh((7.0 * Math.exp(commonExp)) / a), // Alpha (y * 0.0)
-	);
+	fragColor[0] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp + y)) / r)); // Red (y * -1.0)
+	fragColor[1] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - y)) / g)); // Green (y * 1.0)
+	fragColor[2] = Math.fround(
+		Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b),
+	); // Blue (y * 2.0)
+	fragColor[3] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a)); // Alpha (y * 0.0)
+
+	return fragColor;
 }
