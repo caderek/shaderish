@@ -4,18 +4,6 @@ import { untile } from "./lib/untile.js";
 
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
-const ANIMATE = 1;
-const MAX_WORKERS = Infinity;
-const tileSize = 8;
-const adjust = (size) => size / 1;
-const MIN_SIZE = (640 * 2) / devicePixelRatio;
-const w = adjust(640);
-const h = adjust(360);
-// const MIN_SIZE = 512 / devicePixelRatio;
-// const w = adjust(16);
-// const h = adjust(16);
-const scale = MIN_SIZE / w;
-
 const shaders = [
 	"circle",
 	"plasma",
@@ -26,13 +14,34 @@ const shaders = [
 	"phospor",
 ];
 
-document.querySelector("footer").innerHTML = shaders
-	.map((item) => `<a href="/?shader=${item}">${item}</a>`)
-	.join(" | ");
-
+const scaleFactor = Number(
+	new URLSearchParams(location.search).get("factor") ?? "1",
+);
 const shaderName =
 	new URLSearchParams(location.search).get("shader") ?? "plasma";
 const url = await createShaderUrl(shaderName);
+
+document.querySelector("footer").innerHTML =
+	"<p>" +
+	shaders.map((item) => `<a href="/?shader=${item}">${item}</a>`).join(" | ") +
+	"</p>" +
+	"<p>" +
+	[1, 2, 4, 8]
+		.map((item) => `<a href="/?factor=${item}">1 / ${item}</a>`)
+		.join(" | ") +
+	"</p>";
+
+const ANIMATE = 1;
+const MAX_WORKERS = Infinity;
+const tileSize = 8;
+const adjust = (size) => size / scaleFactor;
+const MIN_SIZE = (640 * 2) / devicePixelRatio;
+const w = adjust(640);
+const h = adjust(360);
+// const MIN_SIZE = 512 / devicePixelRatio;
+// const w = adjust(16);
+// const h = adjust(16);
+const scale = MIN_SIZE / w;
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,

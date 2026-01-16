@@ -35,6 +35,10 @@ footer {
   opacity: 0.5;
 }
 
+footer p + p {
+  margin-top: 1rem;
+}
+
 a {
   color: yellow;
 }
