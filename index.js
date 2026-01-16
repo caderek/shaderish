@@ -16,18 +16,23 @@ const h = adjust(360);
 // const h = adjust(16);
 const scale = MIN_SIZE / w;
 
-const urls = await Promise.all(
-	[
-		"circle",
-		"plasma",
-		"singularity",
-		"rainbow",
-		"warp",
-		"accretion",
-		"phospor",
-	].map(createShaderUrl),
-);
-const url = urls[4];
+const shaders = [
+	"circle",
+	"plasma",
+	"singularity",
+	"rainbow",
+	"warp",
+	"accretion",
+	"phospor",
+];
+
+document.querySelector("footer").innerHTML = shaders
+	.map((item) => `<a href="/?shader=${item}">${item}</a>`)
+	.join(" | ");
+
+const shaderName =
+	new URLSearchParams(location.search).get("shader") ?? "plasma";
+const url = await createShaderUrl(shaderName);
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,

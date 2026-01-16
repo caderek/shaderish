@@ -34,3 +34,7 @@ footer {
   text-align: center;
   opacity: 0.5;
 }
+
+a {
+  color: yellow;
+}
