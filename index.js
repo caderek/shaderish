@@ -3,20 +3,21 @@ import { runShader } from "./lib/runShader.js";
 
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
-const ANIMATE = 1;
+const ANIMATE = 0;
 const MAX_WORKERS = Infinity;
+const tileSize = 8;
+const adjust = (size) => size * 1;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
-const adjust = (size) => size / 1;
 const w = adjust(640);
 const h = adjust(360);
 const scale = MIN_SIZE / w;
 
 const urls = await Promise.all(
-	["plasma", "singularity", "rainbow", "warp" /*"accretion"*/].map(
+	["plasma", "singularity", "rainbow", "warp", "accretion", "phospor"].map(
 		createShaderUrl,
 	),
 );
-const url = urls[3];
+const url = urls[1];
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,
@@ -27,6 +28,7 @@ canvas.width = w;
 canvas.height = h;
 canvas.style.setProperty("--width", w);
 canvas.style.setProperty("--scale", scale);
+canvas.style.setProperty("--ratio", `${w} / ${h}`);
 
 const fpsOut = document.getElementById("fps");
 const ctx = canvas.getContext("2d");
@@ -44,14 +46,24 @@ function randomElement(items) {
 	return items[Math.floor(Math.random() * items.length)];
 }
 
-const bufferSize = w * h * 4;
-const buffer = crossOriginIsolated
-	? new SharedArrayBuffer(bufferSize)
-	: new ArrayBuffer(bufferSize);
+const frameSize = w * h * 4;
+const tileByteSize = tileSize ** 2 * 4;
+const tilesPerRow = Math.ceil(w / tileSize);
+const tilesPerCol = Math.ceil(h / tileSize);
 
-const framebuffer = new Uint8ClampedArray(buffer);
+const tilesCount = tilesPerRow * tilesPerCol;
+const framebufferSize = tileByteSize * tilesCount;
+const controlbufferSize = 64;
+const vramSize = framebufferSize + controlbufferSize;
+
+const vram = crossOriginIsolated
+	? new SharedArrayBuffer(vramSize)
+	: new ArrayBuffer(vramSize);
+
+const framebuffer = new Uint8ClampedArray(vram, 0, framebufferSize);
+const controlbuffer = new Uint8Array(vram, framebufferSize, controlbufferSize);
 const staging = crossOriginIsolated
-	? new Uint8ClampedArray(bufferSize)
+	? new Uint8ClampedArray(frameSize)
 	: framebuffer;
 const frame = new ImageData(staging, w, h);
 
@@ -68,15 +80,25 @@ window.addEventListener("mousemove", (e) => {
 
 const maxThreads = navigator.hardwareConcurrency ?? 4;
 const workersCount = Math.min(
-	crossOriginIsolated ? maxThreads - 1 : 0,
+	crossOriginIsolated ? maxThreads : 0,
 	MAX_WORKERS,
 );
-const tileByteSize = 8 ** 2 * 4;
-const tilesCount = Math.ceil(framebuffer.byteLength / tileByteSize); // 256 is 2 to 4 cache lines depending on procesor
-const tilesPerWorker = Math.ceil(tilesCount / (workersCount + 1));
+const tilesPerWorker = Math.ceil(tilesCount / workersCount);
 console.log({ crossOriginIsolated });
-console.log({ threads: workersCount + 1 });
-console.log({ bufferSize, tilesPerWorker });
+console.log({ threads: workersCount > 0 ? workersCount : 1 });
+console.table({
+	w,
+	h,
+	tileSize,
+	tilesPerRow,
+	tilesPerCol,
+	tilesCount,
+	tileByteSize,
+	tilesPerWorker,
+	framebufferSize,
+	controlbufferSize,
+	vramSize,
+});
 
 const workers = Array.from(
 	{ length: workersCount },
@@ -115,7 +137,7 @@ workers.forEach((worker) => {
 		}
 	});
 
-	worker.postMessage(["init", buffer]);
+	worker.postMessage(["init", vram]);
 	worker.postMessage(["loadShader", url]);
 });
 
@@ -138,39 +160,37 @@ async function loop(elapsed = 0) {
 				[[i * tilesPerWorker, i * tilesPerWorker + tilesPerWorker]],
 			]),
 		);
-	}
-
-	runShader(
-		framebuffer,
-		shader,
-		{
-			t: elapsed / 1000, // in seconds as most shaders are done!
-			w,
-			h,
-			mouseX,
-			mouseY,
-		},
-		tilesPerWorker * workersCount,
-		tilesCount,
-	);
-
-	if (workersCount > 0) {
 		await done;
 		rendered = 0;
+	} else {
+		runShader(
+			framebuffer,
+			shader,
+			{
+				t: elapsed / 1000, // in seconds as most shaders are done!
+				w,
+				h,
+				mouseX,
+				mouseY,
+			},
+			0,
+			tilesCount,
+		);
 	}
 
 	if (n % 10 === 0) {
 		const taken = performance.now() - start;
 		const time = elapsed - prev;
 		const fps = time > 0 ? 1000 / time : 0;
-		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount + 1}, Res: ${w}x${h}px`;
+		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px`;
 		n = 0;
 	}
 
 	prev = elapsed;
 	n++;
 
-	staging.set(framebuffer);
+	const sourceView = framebuffer.subarray(0, frameSize);
+	staging.set(sourceView);
 	ctx.putImageData(frame, 0, 0);
 	if (ANIMATE) {
 		requestAnimationFrame(loop);

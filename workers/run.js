@@ -1,4 +1,4 @@
-import { runShader } from "../lib/runShader.js";
+import { runShader, runShaderTiled } from "../lib/runShader.js";
 
 let shader = null;
 let framebuffer = null;
@@ -29,6 +29,15 @@ onmessage = async (e) => {
 			for (const [from, to] of ranges) {
 				runShader(framebuffer, shader, uniforms, from, to);
 			}
+
+			// runShaderTiled(
+			// 	framebuffer,
+			// 	controlbuffer,
+			// 	shader,
+			// 	uniforms,
+			// 	maxTile,
+			// 	chunkLen,
+			// );
 
 			self.postMessage("rendered");
 

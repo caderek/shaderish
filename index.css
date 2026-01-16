@@ -23,9 +23,10 @@ main {
 canvas {
   --scale: 2;
   --width: 640;
+  --ratio: 1 / 1;
   background: black;
   width: calc(1px * var(--width) * var(--scale));
-  aspect-ratio: 16/9;
+  aspect-ratio: var(--ratio);
   image-rendering: pixelated;
 }
 
