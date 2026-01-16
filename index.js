@@ -1,23 +1,33 @@
 import { toClipspace } from "./lib/normalize.js";
 import { runShader } from "./lib/runShader.js";
+import { untile } from "./lib/untile.js";
 
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
-const ANIMATE = 0;
+const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
 const tileSize = 8;
-const adjust = (size) => size * 1;
+const adjust = (size) => size / 1;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
 const w = adjust(640);
 const h = adjust(360);
+// const MIN_SIZE = 512 / devicePixelRatio;
+// const w = adjust(16);
+// const h = adjust(16);
 const scale = MIN_SIZE / w;
 
 const urls = await Promise.all(
-	["plasma", "singularity", "rainbow", "warp", "accretion", "phospor"].map(
-		createShaderUrl,
-	),
+	[
+		"circle",
+		"plasma",
+		"singularity",
+		"rainbow",
+		"warp",
+		"accretion",
+		"phospor",
+	].map(createShaderUrl),
 );
-const url = urls[1];
+const url = urls[4];
 
 const canvas = document.querySelector("canvas", {
 	alpha: false,
@@ -61,11 +71,15 @@ const vram = crossOriginIsolated
 	: new ArrayBuffer(vramSize);
 
 const framebuffer = new Uint8ClampedArray(vram, 0, framebufferSize);
-const controlbuffer = new Uint8Array(vram, framebufferSize, controlbufferSize);
+const controlbuffer = new Uint32Array(
+	vram,
+	framebufferSize,
+	controlbufferSize / 4,
+);
 const staging = crossOriginIsolated
-	? new Uint8ClampedArray(frameSize)
+	? new Uint8ClampedArray(framebufferSize)
 	: framebuffer;
-const frame = new ImageData(staging, w, h);
+const frame = new ImageData(staging.subarray(0, frameSize), w, h);
 
 let n = 0;
 let prev = 0;
@@ -99,6 +113,7 @@ console.table({
 	controlbufferSize,
 	vramSize,
 });
+console.log(vram);
 
 const workers = Array.from(
 	{ length: workersCount },
@@ -137,7 +152,14 @@ workers.forEach((worker) => {
 		}
 	});
 
-	worker.postMessage(["init", vram]);
+	worker.postMessage([
+		"init",
+		vram,
+		framebufferSize,
+		controlbufferSize,
+		tilesPerRow,
+		tilesPerCol,
+	]);
 	worker.postMessage(["loadShader", url]);
 });
 
@@ -162,6 +184,8 @@ async function loop(elapsed = 0) {
 		);
 		await done;
 		rendered = 0;
+		controlbuffer[0] = 0;
+		// Atomics.store(controlbuffer, 0, 0);
 	} else {
 		runShader(
 			framebuffer,
@@ -189,8 +213,9 @@ async function loop(elapsed = 0) {
 	prev = elapsed;
 	n++;
 
-	const sourceView = framebuffer.subarray(0, frameSize);
-	staging.set(sourceView);
+	// const sourceView = framebuffer.subarray(0, frameSize);
+	// staging.set(sourceView);
+	untile(framebuffer, staging, tilesPerRow, tilesPerCol);
 	ctx.putImageData(frame, 0, 0);
 	if (ANIMATE) {
 		requestAnimationFrame(loop);

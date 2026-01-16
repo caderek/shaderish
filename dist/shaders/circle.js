@@ -1,27 +1,26 @@
-export function Color(r, g, b, a) {
-	return new Uint8Array([r * 255, g * 255, b * 255, a * 255]);
+const fragColor = new Float32Array(4);
+
+export function normalize(val) {
+	return Math.fround((val + 1) / 2);
 }
 
-import { toClipspace, normalize } from "../lib/normalize";
-import { Color } from "../lib/vec";
+/**
+ * Deobfuscated Plasma Shader (JS Port) by @XorDev
+ * Source: x.com/XorDev/status/1894123951401378051
+ * @param {number} x - Normalized coordinate (-1 to 1)
+ * @param {number} y - Normalized coordinate (-1 to 1)
+ * @param {object} uniforms - { t: number, w: number, h: number }
+ * @returns {Uint8Array} [r, g, b, a]
+ */
+export function fragment(x, y, { t, w, h }) {
+	x = Math.fround(x * (w / h));
 
-export function circleFragment(x, y) {
-	return Math.hypot(x, y) < 0.5 ? Color(0, 0, 0, 1) : Color(1, 1, 1, 1);
-}
+	const dist = Math.hypot(x, y);
 
-export function circleBouncingFragment(x, y, uniforms) {
-	const ts = normalize(Math.sin(uniforms.t / 500));
-	const tc = normalize(Math.cos(uniforms.t / 300));
-	const offsetX = x - uniforms.mouseX / 3;
-	const offsetY = y + uniforms.mouseY / 3;
-	const distance = Math.hypot(offsetX, offsetY);
-	const fixedDistance = Math.hypot(x, y);
+	fragColor[0] = dist > 0.5 ? 0 : normalize(Math.cos(t));
+	fragColor[1] = dist > 0.5 ? 0 : 0.2;
+	fragColor[2] = dist > 0.5 ? 0 : normalize(Math.sin(t));
+	fragColor[3] = 1.0;
 
-	return distance < 0.3
-		? Color(0, 0, 0, 1)
-		: distance < 0.6
-			? Color(ts / 2, tc / 2, (ts + tc) / 4, 1)
-			: fixedDistance < 1
-				? Color(1, 1, 1, 1)
-				: Color(0, 0, 0, 1);
+	return fragColor;
 }
