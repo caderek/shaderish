@@ -1,4 +1,4 @@
-import { normalize } from "http://shaderish.pages.dev/lib/util.js";
+import { normalize } from "https://shaderish.pages.dev/lib/util.js";
 
 /**
  * Simple circle shader
