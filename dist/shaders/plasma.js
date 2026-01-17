@@ -8,7 +8,7 @@ const fragColor = new Float32Array(4);
  * @param {object} uniforms - { t: number, w: number, h: number }
  * @returns {Uint8Array} [r, g, b, a]
  */
-export function fragment(x, y, { t, w, h }) {
+export function fragment(fragColor, x, y, { t, w, h }) {
 	x = Math.fround(x * (w / h));
 	// 1. Z-Depth / Vignette
 	const dotUV = Math.fround(x * x + y * y);
@@ -55,6 +55,4 @@ export function fragment(x, y, { t, w, h }) {
 		Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b),
 	); // Blue (y * 2.0)
 	fragColor[3] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a)); // Alpha (y * 0.0)
-
-	return fragColor;
 }

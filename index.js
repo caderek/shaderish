@@ -5,6 +5,8 @@ import { untile } from "./lib/untile.js";
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
 const shaders = [
+	"solid",
+	"dirtytiles",
 	"circle",
 	"plasma",
 	"singularity",
@@ -18,7 +20,7 @@ const scaleFactor = Number(
 	new URLSearchParams(location.search).get("factor") ?? "1",
 );
 const shaderName =
-	new URLSearchParams(location.search).get("shader") ?? "plasma";
+	new URLSearchParams(location.search).get("shader") ?? "solid";
 const url = await createShaderUrl(shaderName);
 
 document.querySelector("footer").innerHTML =
@@ -34,7 +36,7 @@ document.querySelector("footer").innerHTML =
 const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
 const tileSize = 8;
-const adjust = (size) => size / scaleFactor;
+const adjust = (size) => size * scaleFactor;
 const MIN_SIZE = (640 * 2) / devicePixelRatio;
 const w = adjust(640);
 const h = adjust(360);

@@ -1,4 +1,4 @@
-import { runShader, runShaderTiled } from "../lib/runShader.js";
+import { runShader } from "../lib/runShader.js";
 
 let shader = null;
 let framebuffer = null;
@@ -22,14 +22,6 @@ onmessage = async (e) => {
 			tilesPerRow = perRow;
 			tilesPerCol = perCol;
 			chunkLen = framebufferSize / (tilesPerRow * tilesPerCol);
-			// console.table({
-			// 	buffer,
-			// 	framebufferSize,
-			// 	controlbufferSize,
-			// 	perRow,
-			// 	perCol,
-			// 	chunkLen,
-			// });
 			break;
 		}
 		case "loadShader": {
@@ -46,11 +38,7 @@ onmessage = async (e) => {
 
 			const [uniforms, ranges] = data;
 
-			// for (const [from, to] of ranges) {
-			// 	runShader(framebuffer, shader, uniforms, from, to);
-			// }
-
-			runShaderTiled(
+			runShader(
 				framebuffer,
 				controlbuffer,
 				shader,

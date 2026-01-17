@@ -1,13 +1,15 @@
-const fragColor = new Float32Array(4);
-
 /**
- * "Accretion" by @XorDev (JS Port)
+ * "Accretion" (JS Port)
+ * Original authour: @Xor -> https://www.shadertoy.com/user/Xor
+ * Source: https://www.shadertoy.com/view/WcKXDV
+ * License: CC BY-NC-SA 3.0 -> https://creativecommons.org/licenses/by-nc-sa/3.0/deed.en
+ *
+ * @param {Float32Array} fragColor - output color in [r, g, b, a]
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {object} uniforms - { t: number, w: number, h: number }
- * @returns {Uint8Array} [r, g, b, a]
  */
-export function fragment(x, y, { t, w, h }) {
+export function fragment(fragColor, x, y, { t, w, h }) {
 	x = x * (w / h);
 
 	// Raymarch depth, Step distance, Iterator
@@ -87,5 +89,4 @@ export function fragment(x, y, { t, w, h }) {
 	fragColor[1] = Math.tanh((og * og) / exposure);
 	fragColor[2] = Math.tanh((ob * ob) / exposure);
 	fragColor[3] = Math.tanh((oa * oa) / exposure);
-	return fragColor;
 }
