@@ -3,6 +3,7 @@ import { runShader } from "../lib/runShader.js";
 let shader = null;
 let framebuffer = null;
 let controlbuffer = null;
+let uniformsbuffer = null;
 let tilesPerRow = 0;
 let tilesPerCol = 0;
 let chunkLen = 0;
@@ -12,12 +13,24 @@ onmessage = async (e) => {
 
 	switch (type) {
 		case "init": {
-			const [buffer, framebufferSize, controlbufferSize, perRow, perCol] = data;
+			const [
+				buffer,
+				framebufferSize,
+				controlbufferSize,
+				uniformsbufferSize,
+				perRow,
+				perCol,
+			] = data;
 			framebuffer = new Uint8ClampedArray(buffer, 0, framebufferSize);
-			controlbuffer = new Uint32Array(
+			controlbuffer = new Int32Array(
 				buffer,
 				framebufferSize,
 				controlbufferSize / 4,
+			);
+			uniformsbuffer = new Float32Array(
+				buffer,
+				framebufferSize + controlbufferSize,
+				uniformsbufferSize / 4,
 			);
 			tilesPerRow = perRow;
 			tilesPerCol = perCol;
@@ -36,19 +49,21 @@ onmessage = async (e) => {
 				throw new Error("No shader provided");
 			}
 
-			const [uniforms, ranges] = data;
-
 			runShader(
 				framebuffer,
 				controlbuffer,
+				uniformsbuffer,
 				shader,
-				uniforms,
 				tilesPerRow,
 				tilesPerCol,
 				chunkLen,
 			);
 
-			self.postMessage("rendered");
+			const workersFinished = Atomics.add(controlbuffer, 1, 1);
+
+			if (workersFinished === controlbuffer[2] - 1) {
+				Atomics.notify(controlbuffer, 1);
+			}
 
 			break;
 		}

@@ -4,45 +4,61 @@ import { untile } from "./lib/untile.js";
 
 document.querySelector("footer").textContent = `v${APP_VERSION}`;
 
+const CONTROL_BUFFER = {
+	tileCounter: 0,
+	workersDone: 1,
+	workersCount: 2,
+};
+
 const shaders = [
 	"solid",
+	"gradient",
 	"dirtytiles",
 	"circle",
 	"plasma",
 	"singularity",
 	"rainbow",
+	"liquid",
 	"warp",
 	"accretion",
-	"phospor",
+	"phosphor",
 ];
 
 const scaleFactor = Number(
 	new URLSearchParams(location.search).get("factor") ?? "1",
 );
 const shaderName =
-	new URLSearchParams(location.search).get("shader") ?? "solid";
+	new URLSearchParams(location.search).get("shader") ?? "plasma";
 const url = await createShaderUrl(shaderName);
 
 document.querySelector("footer").innerHTML =
 	"<p>" +
-	shaders.map((item) => `<a href="/?shader=${item}">${item}</a>`).join(" | ") +
+	shaders
+		.map(
+			(item) =>
+				`<a href="/?shader=${item}&factor=${new URLSearchParams(location.search).get("factor") ?? "1"}">${item}</a>`,
+		)
+		.join(" | ") +
 	"</p>" +
 	"<p>" +
 	[1, 2, 4, 8]
-		.map((item) => `<a href="/?factor=${item}">1 / ${item}</a>`)
+		.map(
+			(item) =>
+				`<a href="/?shader=${new URLSearchParams(location.search).get("shader") ?? "singularity"}&factor=${item}">1 / ${item}</a>`,
+		)
 		.join(" | ") +
 	"</p>";
 
 const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
 const tileSize = 8;
-const adjust = (size) => size * scaleFactor;
-const MIN_SIZE = (640 * 2) / devicePixelRatio;
+const adjust = (size) => size / scaleFactor;
+const MIN_SIZE = (320 * 4) / devicePixelRatio;
 const w = adjust(640);
 const h = adjust(360);
 // const MIN_SIZE = 512 / devicePixelRatio;
-// const w = adjust(16);
-// const h = adjust(16);
+// const w = adjust(512);
+// const h = adjust(512);
 const scale = MIN_SIZE / w;
 
 const canvas = document.querySelector("canvas", {
@@ -80,17 +96,23 @@ const tilesPerCol = Math.ceil(h / tileSize);
 const tilesCount = tilesPerRow * tilesPerCol;
 const framebufferSize = tileByteSize * tilesCount;
 const controlbufferSize = 64;
-const vramSize = framebufferSize + controlbufferSize;
+const uniformsbufferSize = 64;
+const vramSize = framebufferSize + controlbufferSize + uniformsbufferSize;
 
 const vram = crossOriginIsolated
 	? new SharedArrayBuffer(vramSize)
 	: new ArrayBuffer(vramSize);
 
 const framebuffer = new Uint8ClampedArray(vram, 0, framebufferSize);
-const controlbuffer = new Uint32Array(
+const controlbuffer = new Int32Array(
 	vram,
 	framebufferSize,
 	controlbufferSize / 4,
+);
+const uniformsbuffer = new Float32Array(
+	vram,
+	framebufferSize + controlbufferSize,
+	uniformsbufferSize / 4,
 );
 const staging = crossOriginIsolated
 	? new Uint8ClampedArray(framebufferSize)
@@ -173,35 +195,42 @@ workers.forEach((worker) => {
 		vram,
 		framebufferSize,
 		controlbufferSize,
+		uniformsbufferSize,
 		tilesPerRow,
 		tilesPerCol,
 	]);
 	worker.postMessage(["loadShader", url]);
 });
 
+controlbuffer[CONTROL_BUFFER.workersCount] = workersCount;
+
 async function loop(elapsed = 0) {
 	if (workersCount > 0) {
 		await doneLoad;
 	}
 	const start = performance.now();
-	let done;
+	uniformsbuffer[0] = elapsed / 1000;
+	uniformsbuffer[1] = w;
+	uniformsbuffer[2] = h;
+	// uniformsbuffer[3] = mouseX;
+	// uniformsbuffer[4] = mouseY;
 
 	if (workersCount > 0) {
-		done = new Promise((resolve) => {
-			endRender = resolve;
-		});
+		// done = new Promise((resolve) => {
+		// 	endRender = resolve;
+		// });
 
 		workers.forEach((worker, i) =>
 			worker.postMessage([
 				"runShader",
-				{ t: elapsed / 1000, w, h },
 				[[i * tilesPerWorker, i * tilesPerWorker + tilesPerWorker]],
 			]),
 		);
-		await done;
+		await Atomics.waitAsync(controlbuffer, CONTROL_BUFFER.workersDone, 0).value;
+		// await done;
 		rendered = 0;
-		controlbuffer[0] = 0;
-		// Atomics.store(controlbuffer, 0, 0);
+		controlbuffer[CONTROL_BUFFER.tileCounter] = 0;
+		controlbuffer[CONTROL_BUFFER.workersDone] = 0;
 	} else {
 		runShader(
 			framebuffer,

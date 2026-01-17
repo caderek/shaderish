@@ -1,14 +1,17 @@
-const fragColor = new Float32Array(4);
-
 /**
- * Deobfuscated Plasma Shader (JS Port) by @XorDev
- * Source: x.com/XorDev/status/1894123951401378051
+ * "Plasma" (JS Port)
+ * Original authour: @Xor -> https://www.shadertoy.com/user/Xor
+ * Source: https://www.shadertoy.com/view/WfS3Dd
+ * License: CC BY-NC-SA 3.0 -> https://creativecommons.org/licenses/by-nc-sa/3.0/deed.en
+ *
+ * @param {Float32Array} fragColor - output color in [r, g, b, a]
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
- * @param {object} uniforms - { t: number, w: number, h: number }
- * @returns {Uint8Array} [r, g, b, a]
+ * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(fragColor, x, y, { t, w, h }) {
+export function fragment(fragColor, x, y, uni) {
+	const [t, w, h] = uni;
+
 	x = Math.fround(x * (w / h));
 	// 1. Z-Depth / Vignette
 	const dotUV = Math.fround(x * x + y * y);

@@ -1,93 +1,16 @@
-const fragColor = new Float32Array(4);
-// export function Color(r, g, b, a) {
-// 	return new Uint8Array([
-// 		Math.max(0, Math.min(255, r * 255)),
-// 		Math.max(0, Math.min(255, g * 255)),
-// 		Math.max(0, Math.min(255, b * 255)),
-// 		Math.max(0, Math.min(255, a * 255)),
-// 	]);
-// }
-
-// --- Helper Functions ---
-
-function fract(x) {
-	return x - Math.floor(x);
-}
-
-// Helper to handle mod for negative numbers like GLSL
-function glslMod(x, y) {
-	return x - y * Math.floor(x / y);
-}
-
-function length(x, y) {
-	return Math.sqrt(x * x + y * y);
-}
-
-function smoothFract(x, y, z) {
-	// vec3 smoothFract(vec3 x){ x = fract(x); return min(x, x*(1.-x)*12.); }
-	let fx = fract(x);
-	let fy = fract(y);
-	let fz = fract(z);
-
-	return [
-		Math.min(fx, fx * (1.0 - fx) * 12.0),
-		Math.min(fy, fy * (1.0 - fy) * 12.0),
-		Math.min(fz, fz * (1.0 - fz) * 12.0),
-	];
-}
-
-// --- The Warp Function ---
-// Returns [x, y]
-function W(px, py, t) {
-	// p = (p + 3.)*4.;
-	px = (px + 3.0) * 4.0;
-	py = (py + 3.0) * 4.0;
-
-	const time = t / 2.0;
-
-	// Layered sinusoidal feedback
-	for (let i = 0; i < 3; i++) {
-		// p += cos(p.yx*3. + vec2(t, 1.57))/3.;
-		// Note the swizzle p.yx (y is used for x calc, x is used for y calc)
-		let oldX = px;
-		let oldY = py;
-
-		px += Math.cos(oldY * 3.0 + time) / 3.0;
-		py += Math.cos(oldX * 3.0 + 1.57 + time) / 3.0; // 1.57 is approx PI/2
-
-		// p += sin(p.yx + t + vec2(1.57, 0))/2.;
-		oldX = px;
-		oldY = py;
-
-		px += Math.sin(oldY + time + 1.57) / 2.0;
-		py += Math.sin(oldX + time) / 2.0;
-
-		// p *= 1.3;
-		px *= 1.3;
-		py *= 1.3;
-	}
-
-	// Jitter
-	// p += fract(sin(p+vec2(13, 7))*5e5)*.03 - .015;
-	let sx = Math.sin(px + 13.0) * 500000.0;
-	let sy = Math.sin(py + 7.0) * 500000.0;
-
-	px += fract(sx) * 0.03 - 0.015;
-	py += fract(sy) * 0.03 - 0.015;
-
-	// return mod(p, 2.) - 1.;
-	return [glslMod(px, 2.0) - 1.0, glslMod(py, 2.0) - 1.0];
-}
-
-// --- Bump Mapping Function ---
-function bumpFunc(px, py, t) {
-	const w = W(px, py, t);
-	return length(w[0], w[1]) * 0.7071;
-}
-
-// --- Main Shader ---
-
-export function fragment(x, y, { t, w, h }) {
+/**
+ * "Bumped Sinusoidal Warp" (JS Port)
+ * Original authour: @Shane -> https://www.shadertoy.com/user/Shane
+ * Source: https://www.shadertoy.com/view/4l2XWK
+ * License: CC BY-NC-SA 3.0 -> https://creativecommons.org/licenses/by-nc-sa/3.0/deed.en
+ *
+ * @param {Float32Array} fragColor - output color in [r, g, b, a]
+ * @param {number} x - Normalized coordinate (-1 to 1)
+ * @param {number} y - Normalized coordinate (-1 to 1)
+ * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
+ */
+export function fragment(fragColor, x, y, uni) {
+	const [t, w, h] = uni;
 	// 1. Aspect Correction (User's preferred method)
 	x = x * (w / h);
 
@@ -235,5 +158,81 @@ export function fragment(x, y, { t, w, h }) {
 	fragColor[1] = Math.sqrt(colG);
 	fragColor[2] = Math.sqrt(colB);
 	fragColor[3] = 1.0;
-	return fragColor;
+}
+
+// --- Helper Functions ---
+
+function fract(x) {
+	return x - Math.floor(x);
+}
+
+// Helper to handle mod for negative numbers like GLSL
+function glslMod(x, y) {
+	return x - y * Math.floor(x / y);
+}
+
+function length(x, y) {
+	return Math.sqrt(x * x + y * y);
+}
+
+function smoothFract(x, y, z) {
+	// vec3 smoothFract(vec3 x){ x = fract(x); return min(x, x*(1.-x)*12.); }
+	let fx = fract(x);
+	let fy = fract(y);
+	let fz = fract(z);
+
+	return [
+		Math.min(fx, fx * (1.0 - fx) * 12.0),
+		Math.min(fy, fy * (1.0 - fy) * 12.0),
+		Math.min(fz, fz * (1.0 - fz) * 12.0),
+	];
+}
+
+// --- The Warp Function ---
+// Returns [x, y]
+function W(px, py, t) {
+	// p = (p + 3.)*4.;
+	px = (px + 3.0) * 4.0;
+	py = (py + 3.0) * 4.0;
+
+	const time = t / 2.0;
+
+	// Layered sinusoidal feedback
+	for (let i = 0; i < 3; i++) {
+		// p += cos(p.yx*3. + vec2(t, 1.57))/3.;
+		// Note the swizzle p.yx (y is used for x calc, x is used for y calc)
+		let oldX = px;
+		let oldY = py;
+
+		px += Math.cos(oldY * 3.0 + time) / 3.0;
+		py += Math.cos(oldX * 3.0 + 1.57 + time) / 3.0; // 1.57 is approx PI/2
+
+		// p += sin(p.yx + t + vec2(1.57, 0))/2.;
+		oldX = px;
+		oldY = py;
+
+		px += Math.sin(oldY + time + 1.57) / 2.0;
+		py += Math.sin(oldX + time) / 2.0;
+
+		// p *= 1.3;
+		px *= 1.3;
+		py *= 1.3;
+	}
+
+	// Jitter
+	// p += fract(sin(p+vec2(13, 7))*5e5)*.03 - .015;
+	let sx = Math.sin(px + 13.0) * 500000.0;
+	let sy = Math.sin(py + 7.0) * 500000.0;
+
+	px += fract(sx) * 0.03 - 0.015;
+	py += fract(sy) * 0.03 - 0.015;
+
+	// return mod(p, 2.) - 1.;
+	return [glslMod(px, 2.0) - 1.0, glslMod(py, 2.0) - 1.0];
+}
+
+// --- Bump Mapping Function ---
+function bumpFunc(px, py, t) {
+	const w = W(px, py, t);
+	return length(w[0], w[1]) * 0.7071;
 }

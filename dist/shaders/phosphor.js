@@ -1,14 +1,16 @@
-const fragColor = new Float32Array(4);
-
 /**
- * "Phosphor 3" by @XorDev (JS Port)
- * Original: x.com/XorDev/status/1949897576435581439
+ * "Phosphor 3" (JS Port)
+ * Original authour: @Xor -> https://www.shadertoy.com/user/Xor
+ * Source: https://www.shadertoy.com/view/3XtXzX
+ * License: CC BY-NC-SA 3.0 -> https://creativecommons.org/licenses/by-nc-sa/3.0/deed.en
+ *
+ * @param {Float32Array} fragColor - output color in [r, g, b, a]
  * @param {number} x - Normalized coordinate (-1 to 1)
  * @param {number} y - Normalized coordinate (-1 to 1)
- * @param {object} uniforms - { t: number, w: number, h: number }
- * @returns {Float32Array} [r, g, b, a]
+ * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, { t, w, h }) {
+export function fragment(fragColor, x, y, uni) {
+	const [t, w, h] = uni;
 	// Correct aspect ratio for x
 	x = Math.fround(x * (w / h));
 
@@ -116,6 +118,4 @@ export function fragment(x, y, { t, w, h }) {
 	fragColor[1] = Math.tanh(g / 5000.0);
 	fragColor[2] = Math.tanh(b / 5000.0);
 	fragColor[3] = 1.0; // Alpha
-
-	return fragColor;
 }
