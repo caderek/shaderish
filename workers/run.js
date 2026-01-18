@@ -39,7 +39,7 @@ onmessage = async (e) => {
 		}
 		case "loadShader": {
 			const [shaderPath] = data;
-			shader = (await import(shaderPath)).fragment;
+			shader = (await import(/* @vite-ignore */ shaderPath)).fragment;
 			self.postMessage("loaded");
 
 			break;

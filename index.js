@@ -8,6 +8,8 @@ const CONTROL_BUFFER = {
 	tileCounter: 0,
 	workersDone: 1,
 	workersCount: 2,
+	tileSizeX: 3,
+	tileSizeY: 4,
 };
 
 const shaders = [
@@ -24,11 +26,15 @@ const shaders = [
 	"phosphor",
 ];
 
-const scaleFactor = Number(
-	new URLSearchParams(location.search).get("factor") ?? "1",
-);
-const shaderName =
-	new URLSearchParams(location.search).get("shader") ?? "plasma";
+const search = new URLSearchParams(location.search);
+
+const scaleFactor = Number(search.get("factor") ?? "1");
+const shaderName = search.get("shader") ?? "plasma";
+
+const [tileSizeX, tileSizeY] = (search.get("tile") ?? "8x8")
+	.split("x")
+	.map(Number);
+
 const url = await createShaderUrl(shaderName);
 
 document.querySelector("footer").innerHTML =
@@ -36,7 +42,7 @@ document.querySelector("footer").innerHTML =
 	shaders
 		.map(
 			(item) =>
-				`<a href="/?shader=${item}&factor=${new URLSearchParams(location.search).get("factor") ?? "1"}">${item}</a>`,
+				`<a href="/?shader=${item}&factor=${search.get("factor") ?? "1"}&tile=${search.get("tile") ?? "8x8"}">${item}</a>`,
 		)
 		.join(" | ") +
 	"</p>" +
@@ -44,14 +50,35 @@ document.querySelector("footer").innerHTML =
 	[1, 2, 4, 8]
 		.map(
 			(item) =>
-				`<a href="/?shader=${new URLSearchParams(location.search).get("shader") ?? "singularity"}&factor=${item}">1 / ${item}</a>`,
+				`<a href="/?shader=${search.get("shader") ?? "singularity"}&factor=${item}&tile=${search.get("tile") ?? "8x8"}">1 / ${item}</a>`,
+		)
+		.join(" | ") +
+	"</p>" +
+	"<p>" +
+	[
+		"1x1",
+		"2x2",
+		"4x4",
+		"8x8",
+		"16x16",
+		"32x32",
+		"64x64",
+		"1x2",
+		"2x4",
+		"4x8",
+		"8x16",
+		"16x32",
+		"32x64",
+	]
+		.map(
+			(item) =>
+				`<a href="/?shader=${search.get("shader") ?? "singularity"}&factor=${search.get("factor") ?? 1}&tile=${item}">${item}</a>`,
 		)
 		.join(" | ") +
 	"</p>";
 
 const ANIMATE = 1;
-const MAX_WORKERS = Infinity;
-const tileSize = 8;
+const MAX_WORKERS = 4; //Infinity;
 const adjust = (size) => size / scaleFactor;
 const MIN_SIZE = (320 * 4) / devicePixelRatio;
 const w = adjust(640);
@@ -89,9 +116,9 @@ function randomElement(items) {
 }
 
 const frameSize = w * h * 4;
-const tileByteSize = tileSize ** 2 * 4;
-const tilesPerRow = Math.ceil(w / tileSize);
-const tilesPerCol = Math.ceil(h / tileSize);
+const tileByteSize = tileSizeX * tileSizeY * 4;
+const tilesPerRow = Math.ceil(w / tileSizeX);
+const tilesPerCol = Math.ceil(h / tileSizeY);
 
 const tilesCount = tilesPerRow * tilesPerCol;
 const framebufferSize = tileByteSize * tilesCount;
@@ -141,7 +168,8 @@ console.log({ threads: workersCount > 0 ? workersCount : 1 });
 console.table({
 	w,
 	h,
-	tileSize,
+	tileSizeX,
+	tileSizeY,
 	tilesPerRow,
 	tilesPerCol,
 	tilesCount,
@@ -203,6 +231,8 @@ workers.forEach((worker) => {
 });
 
 controlbuffer[CONTROL_BUFFER.workersCount] = workersCount;
+controlbuffer[CONTROL_BUFFER.tileSizeX] = tileSizeX;
+controlbuffer[CONTROL_BUFFER.tileSizeY] = tileSizeY;
 
 async function loop(elapsed = 0) {
 	if (workersCount > 0) {
@@ -220,12 +250,7 @@ async function loop(elapsed = 0) {
 		// 	endRender = resolve;
 		// });
 
-		workers.forEach((worker, i) =>
-			worker.postMessage([
-				"runShader",
-				[[i * tilesPerWorker, i * tilesPerWorker + tilesPerWorker]],
-			]),
-		);
+		workers.forEach((worker, i) => worker.postMessage(["runShader"]));
 		await Atomics.waitAsync(controlbuffer, CONTROL_BUFFER.workersDone, 0).value;
 		// await done;
 		rendered = 0;
@@ -251,7 +276,7 @@ async function loop(elapsed = 0) {
 		const taken = performance.now() - start;
 		const time = elapsed - prev;
 		const fps = time > 0 ? 1000 / time : 0;
-		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px`;
+		fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px, Tile: ${tileSizeX}x${tileSizeY}`;
 		n = 0;
 	}
 
@@ -260,7 +285,7 @@ async function loop(elapsed = 0) {
 
 	// const sourceView = framebuffer.subarray(0, frameSize);
 	// staging.set(sourceView);
-	untile(framebuffer, staging, tilesPerRow, tilesPerCol);
+	untile(framebuffer, staging, tileSizeX, tileSizeY, tilesPerRow, tilesPerCol);
 	ctx.putImageData(frame, 0, 0);
 	if (ANIMATE) {
 		requestAnimationFrame(loop);
