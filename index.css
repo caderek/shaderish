@@ -7,17 +7,24 @@
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
   background: #222;
   color: #fafafa;
+
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 main {
   margin: auto;
   text-align: center;
-  padding: 1rem 0;
 }
 
 canvas {
@@ -30,9 +37,14 @@ canvas {
   image-rendering: pixelated;
 }
 
+#fps {
+  padding: 1rem;
+}
+
 footer {
   text-align: center;
   opacity: 0.5;
+  padding: 1rem;
 }
 
 footer p + p {

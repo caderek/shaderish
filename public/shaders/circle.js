@@ -9,13 +9,25 @@ import { normalize } from "https://shaderish.pages.dev/lib/util.js";
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
 export function fragment(fragColor, x, y, uni) {
-	const [t, w, h] = uni;
-	x = Math.fround(x * (w / h));
+  let [t, w, h] = uni;
+  const scaleX = 1.5;
+  const scaleY = 1;
+  x = Math.fround((x * (w / h)) / scaleX);
+  y /= scaleY;
+  t *= 4;
+  x += Math.fround(0.25 - normalize(Math.sin(t)) * 0.5);
 
-	const dist = Math.fround(Math.hypot(x, y));
+  const r = 0.5;
 
-	fragColor[0] = dist > 0.5 ? 0 : normalize(Math.cos(t));
-	fragColor[1] = dist > 0.5 ? 0 : 0.2;
-	fragColor[2] = dist > 0.5 ? 0 : normalize(Math.sin(t));
-	fragColor[3] = 1.0;
+  if (x * x + y * y > r * r) {
+    fragColor[0] = 0;
+    fragColor[1] = 0;
+    fragColor[2] = 0;
+  } else {
+    fragColor[0] = 0.7;
+    fragColor[1] = 0.2;
+    fragColor[2] = 0.2;
+  }
+
+  fragColor[3] = 1.0;
 }
