@@ -1,4 +1,5 @@
 import { color } from "https://shaderish.pages.dev/lib/util.js";
+
 /**
  * Simple gradient for testing
  *

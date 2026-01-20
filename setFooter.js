@@ -1,6 +1,7 @@
 const shaders = [
   "solid",
   "gradient",
+  "noise",
   "circle",
   "plasma",
   "singularity",
@@ -17,7 +18,7 @@ export function setFooter(search) {
     shaders
       .map(
         (item) =>
-          `<a href="/?shader=${item}&res=${search.get("res") ?? "1"}&tile=${search.get("tile") ?? "8x8"}">${item}</a>`,
+          `<a href="/?shader=${item}&res=${search.get("res") ?? "640x360"}&tile=${search.get("tile") ?? "8x8"}">${item}</a>`,
       )
       .join(" | ") +
     "</p>" +
@@ -47,7 +48,7 @@ export function setFooter(search) {
     ]
       .map(
         (item) =>
-          `<a href="/?shader=${search.get("shader") ?? "singularity"}&res=${search.get("res") ?? 1}&tile=${item}">${item}</a>`,
+          `<a href="/?shader=${search.get("shader") ?? "singularity"}&res=${search.get("res") ?? "640x360"}&tile=${item}">${item}</a>`,
       )
       .join(" | ") +
     "</p>";

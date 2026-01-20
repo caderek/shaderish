@@ -198,13 +198,8 @@ async function loop(elapsed = 0) {
   // uniformsbuffer[4] = mouseY;
 
   if (workersCount > 0) {
-    // done = new Promise((resolve) => {
-    // 	endRender = resolve;
-    // });
-
     workers.forEach((worker, i) => worker.postMessage(["runShader"]));
     await Atomics.waitAsync(controlbuffer, CONTROL_BUFFER.workersDone, 0).value;
-    // await done;
     rendered = 0;
     controlbuffer[CONTROL_BUFFER.tileCounter] = 0;
     controlbuffer[CONTROL_BUFFER.workersDone] = 0;
@@ -224,11 +219,18 @@ async function loop(elapsed = 0) {
     );
   }
 
+  const mid = performance.now();
+  untile(framebuffer, staging, tileSizeX, tileSizeY, tilesPerRow, tilesPerCol);
+  ctx.putImageData(frame, 0, 0);
+
   if (n % 10 === 0) {
-    const taken = performance.now() - start;
+    const end = performance.now();
+    const takenShader = mid - start;
+    const takenClone = end - mid;
+    const takenAll = takenShader + takenClone;
     const time = elapsed - prev;
     const fps = time > 0 ? 1000 / time : 0;
-    fpsOut.innerText = `FPS: ${fps.toFixed(1)}, Render: ${taken.toFixed(2)}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px, Tile: ${tileSizeX}x${tileSizeY}`;
+    fpsOut.innerText = `FPS: ${fps.toFixed(1)}, All: ${takenAll.toFixed(2).padStart(5, "0")}ms, Shader: ${takenShader.toFixed(2).padStart(5, "0")}ms, Clone: ${takenClone.toFixed(2).padStart(5, "0")}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px, Tile: ${tileSizeX}x${tileSizeY}`;
     n = 0;
   }
 
@@ -237,8 +239,6 @@ async function loop(elapsed = 0) {
 
   // const sourceView = framebuffer.subarray(0, frameSize);
   // staging.set(sourceView);
-  untile(framebuffer, staging, tileSizeX, tileSizeY, tilesPerRow, tilesPerCol);
-  ctx.putImageData(frame, 0, 0);
   if (ANIMATE) {
     requestAnimationFrame(loop);
   }

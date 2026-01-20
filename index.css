@@ -39,6 +39,7 @@ canvas {
 
 #fps {
   padding: 1rem;
+  font-family: monospace;
 }
 
 footer {
