@@ -1,3 +1,4 @@
+import { setFooter } from "./setFooter.js";
 import { toClipspace } from "./lib/normalize.js";
 import { runShader } from "./lib/runShader.js";
 import { untile } from "./lib/untile.js";
@@ -12,23 +13,12 @@ const CONTROL_BUFFER = {
   tileSizeY: 4,
 };
 
-const shaders = [
-  "solid",
-  "gradient",
-  "dirtytiles",
-  "circle",
-  "plasma",
-  "singularity",
-  "rainbow",
-  "liquid",
-  "warp",
-  "accretion",
-  "phosphor",
-];
-
 const search = new URLSearchParams(location.search);
 
-const scaleFactor = Number(search.get("factor") ?? "1");
+setFooter(search);
+
+const [w, h] = (search.get("res") ?? "640x360").split("x").map(Number);
+
 const shaderName = search.get("shader") ?? "plasma";
 
 const [tileSizeX, tileSizeY] = (search.get("tile") ?? "8x8")
@@ -37,55 +27,9 @@ const [tileSizeX, tileSizeY] = (search.get("tile") ?? "8x8")
 
 const url = await createShaderUrl(shaderName);
 
-document.querySelector("footer").innerHTML =
-  "<p>" +
-  shaders
-    .map(
-      (item) =>
-        `<a href="/?shader=${item}&factor=${search.get("factor") ?? "1"}&tile=${search.get("tile") ?? "8x8"}">${item}</a>`,
-    )
-    .join(" | ") +
-  "</p>" +
-  "<p>" +
-  [1, 2, 4, 8]
-    .map(
-      (item) =>
-        `<a href="/?shader=${search.get("shader") ?? "singularity"}&factor=${item}&tile=${search.get("tile") ?? "8x8"}">1 / ${item}</a>`,
-    )
-    .join(" | ") +
-  "</p>" +
-  "<p>" +
-  [
-    "1x1",
-    "2x2",
-    "4x4",
-    "8x8",
-    "16x16",
-    "32x32",
-    "64x64",
-    "2x1",
-    "4x2",
-    "8x4",
-    "16x8",
-    "32x16",
-    "64x32",
-  ]
-    .map(
-      (item) =>
-        `<a href="/?shader=${search.get("shader") ?? "singularity"}&factor=${search.get("factor") ?? 1}&tile=${item}">${item}</a>`,
-    )
-    .join(" | ") +
-  "</p>";
-
 const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
-const adjust = (size) => size / scaleFactor;
-const MIN_SIZE = (640 * 3) / devicePixelRatio;
-const w = adjust(640 * 3);
-const h = adjust(360 * 3);
-// const MIN_SIZE = 512 / devicePixelRatio;
-// const w = adjust(512);
-// const h = adjust(512);
+const MIN_SIZE = 1920 / devicePixelRatio;
 const scale = MIN_SIZE / w;
 
 const canvas = document.querySelector("canvas", {

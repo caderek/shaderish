@@ -1,4 +1,4 @@
-import { normalize } from "https://shaderish.pages.dev/lib/util.js";
+import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
 
 /**
  * Simple circle shader
@@ -8,8 +8,7 @@ import { normalize } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(fragColor, x, y, uni) {
-  let [t, w, h] = uni;
+export function fragment(x, y, t, w, h) {
   const scaleX = 1.5;
   const scaleY = 1;
   x = Math.fround((x * (w / h)) / scaleX);
@@ -19,15 +18,7 @@ export function fragment(fragColor, x, y, uni) {
 
   const r = 0.5;
 
-  if (x * x + y * y > r * r) {
-    fragColor[0] = 0;
-    fragColor[1] = 0;
-    fragColor[2] = 0;
-  } else {
-    fragColor[0] = 0.7;
-    fragColor[1] = 0.2;
-    fragColor[2] = 0.2;
-  }
-
-  fragColor[3] = 1.0;
+  return x * x + y * y > r * r
+    ? color(0, 0, 0, 1.0)
+    : color(0.7, 0.2, 0.2, 1.0);
 }
