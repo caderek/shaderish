@@ -1,3 +1,5 @@
+import { fastColor } from "https://shaderish.pages.dev/lib/util.js";
+
 /**
  * "Plasma" (JS Port)
  * Original authour: @Xor -> https://www.shadertoy.com/user/Xor
@@ -63,5 +65,5 @@ export function fragment(x, y, t, w, h) {
   b = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b));
   a = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a));
 
-  return (255 * r) | ((255 * g) << 8) | ((255 * b) << 16) | ((255 * a) << 24);
+  return fastColor(r, g, b, a);
 }

@@ -10,3 +10,7 @@ export function color(r, g, b, a) {
 
   return r | (g << 8) | (b << 16) | (a << 24);
 }
+
+export function fastColor(r, g, b, a) {
+  return r | (g << 8) | (b << 16) | (a << 24);
+}
