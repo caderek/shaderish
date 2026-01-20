@@ -29,7 +29,8 @@ const url = await createShaderUrl(shaderName);
 
 const ANIMATE = 1;
 const MAX_WORKERS = Infinity;
-const MIN_SIZE = 1920 / devicePixelRatio;
+const MULTIPLE = Math.floor(window.innerWidth / 320);
+const MIN_SIZE = 320 * MULTIPLE;
 const scale = MIN_SIZE / w;
 
 const canvas = document.querySelector("canvas", {

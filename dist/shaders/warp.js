@@ -1,4 +1,4 @@
-import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
+import { color } from "https://shaderish.pages.dev/lib/util.js";
 
 /**
  * "Bumped Sinusoidal Warp" (JS Port)
