@@ -9,53 +9,59 @@
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(fragColor, x, y, uni) {
-	const [t, w, h] = uni;
+export function fragment(x, y, t, w, h) {
+  // const [t, w, h] = uni;
 
-	x = Math.fround(x * (w / h));
-	// 1. Z-Depth / Vignette
-	const dotUV = Math.fround(x * x + y * y);
-	const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));
+  x = Math.fround(x * (w / h));
+  // 1. Z-Depth / Vignette
+  const dotUV = Math.fround(x * x + y * y);
+  const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));
 
-	// 2. Initial Fluid Coordinates
-	let f_x = Math.fround(x * zVal);
-	let f_y = Math.fround(y * zVal);
+  // 2. Initial Fluid Coordinates
+  let f_x = Math.fround(x * zVal);
+  let f_y = Math.fround(y * zVal);
 
-	let r = 0,
-		g = 0,
-		b = 0,
-		a = 0;
+  let r = 0,
+    g = 0,
+    b = 0,
+    a = 0;
 
-	// 3. The 8-Step Iteration Loop
-	for (let iter = 1; iter <= 8; iter++) {
-		// Domain Warping Step
-		// Note the axis swap (f_y used for new f_x)
-		const arg_x = f_y * iter + t;
-		const arg_y = f_x * iter + iter + t;
+  // 3. The 8-Step Iteration Loop
+  for (let iter = 1; iter <= 8; iter++) {
+    // Domain Warping Step
+    // Note the axis swap (f_y used for new f_x)
+    const arg_x = f_y * iter + t;
+    const arg_y = f_x * iter + iter + t;
 
-		f_x += Math.fround(Math.cos(arg_x) / iter + 0.7);
-		f_y += Math.fround(Math.cos(arg_y) / iter + 0.7);
+    f_x += Math.fround(Math.cos(arg_x) / iter + 0.7);
+    f_y += Math.fround(Math.cos(arg_y) / iter + 0.7);
 
-		// Cumulative Color Calculation
-		const intensity = Math.fround(Math.abs(f_x - f_y));
-		const sin_fx = Math.fround(Math.sin(f_x) + 1.0);
-		const sin_fy = Math.fround(Math.sin(f_y) + 1.0);
+    // Cumulative Color Calculation
+    const intensity = Math.fround(Math.abs(f_x - f_y));
+    const sin_fx = Math.fround(Math.sin(f_x) + 1.0);
+    const sin_fy = Math.fround(Math.sin(f_y) + 1.0);
 
-		// Map sin results to RGBA channels (xyyx swizzle)
-		r += sin_fx * intensity;
-		g += sin_fy * intensity;
-		b += sin_fy * intensity;
-		a += sin_fx * intensity;
-	}
+    // Map sin results to RGBA channels (xyyx swizzle)
+    r += sin_fx * intensity;
+    g += sin_fy * intensity;
+    b += sin_fy * intensity;
+    a += sin_fx * intensity;
+  }
 
-	// 4. Final Gradient and Tonemapping
-	// We use Math.exp for the vertical color shift and Math.tanh to clamp the glow
-	const commonExp = Math.fround(zVal - 4.0);
+  // 4. Final Gradient and Tonemapping
+  // We use Math.exp for the vertical color shift and Math.tanh to clamp the glow
+  const commonExp = Math.fround(zVal - 4.0);
 
-	fragColor[0] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp + y)) / r)); // Red (y * -1.0)
-	fragColor[1] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - y)) / g)); // Green (y * 1.0)
-	fragColor[2] = Math.fround(
-		Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b),
-	); // Blue (y * 2.0)
-	fragColor[3] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a)); // Alpha (y * 0.0)
+  // fragColor[0] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp + y)) / r)); // Red (y * -1.0)
+  // fragColor[1] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - y)) / g)); // Green (y * 1.0)
+  // fragColor[2] = Math.fround(
+  //   Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b),
+  // ); // Blue (y * 2.0)
+  // fragColor[3] = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a)); // Alpha (y * 0.0)
+  r = Math.fround(Math.tanh((7.0 * Math.exp(commonExp + y)) / r));
+  g = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - y)) / g));
+  b = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b));
+  a = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a));
+
+  return (255 * r) | ((255 * g) << 8) | ((255 * b) << 16) | ((255 * a) << 24);
 }

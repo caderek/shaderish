@@ -1,3 +1,4 @@
+import { color } from "https://shaderish.pages.dev/lib/util.js";
 /**
  * Simple gradient for testing
  *
@@ -6,9 +7,10 @@
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffer - { t: number, w: number, h: number }
  */
-export function fragment(fragColor, x, y) {
-	fragColor[0] = (x + 1) / 2;
-	fragColor[1] = 0.5;
-	fragColor[2] = (y + 1) / 2;
-	fragColor[3] = 1.0;
+export function fragment(x, y) {
+  const r = (x + 1) / 2;
+  const g = 0.5;
+  const b = (y + 1) / 2;
+  const a = 1.0;
+  return color(r, g, b, a);
 }
