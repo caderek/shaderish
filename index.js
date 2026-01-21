@@ -194,8 +194,8 @@ async function loop(elapsed = 0) {
   uniformsbuffer[0] = elapsed / 1000;
   uniformsbuffer[1] = w;
   uniformsbuffer[2] = h;
-  // uniformsbuffer[3] = mouseX;
-  // uniformsbuffer[4] = mouseY;
+  uniformsbuffer[3] = mouseX;
+  uniformsbuffer[4] = mouseY;
 
   if (workersCount > 0) {
     workers.forEach((worker, i) => worker.postMessage(["runShader"]));

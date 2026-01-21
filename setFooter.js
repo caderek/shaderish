@@ -10,6 +10,7 @@ const shaders = [
   "warp",
   "accretion",
   "phosphor",
+  "waves",
 ];
 
 export function setFooter(search) {
