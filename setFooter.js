@@ -4,6 +4,7 @@ const shaders = [
   "noise",
   "circle",
   "plasma",
+  "plasma-fast",
   "singularity",
   "rainbow",
   "liquid",
@@ -11,6 +12,7 @@ const shaders = [
   "accretion",
   "phosphor",
   "waves",
+  ...(import.meta.env.DEV ? ["custom"] : []),
 ];
 
 export function setFooter(search) {

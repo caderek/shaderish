@@ -2,11 +2,15 @@ export function normalize(val) {
   return Math.fround((val + 1) / 2);
 }
 
+export function clamp(val, min, max) {
+  return val < min ? min : val > max ? max : val;
+}
+
 export function color(r, g, b, a) {
-  r = Math.max(0, Math.min(r * 255, 255));
-  g = Math.max(0, Math.min(g * 255, 255));
-  b = Math.max(0, Math.min(b * 255, 255));
-  a = Math.max(0, Math.min(a * 255, 255));
+  r = clamp(r * 255, 0, 255);
+  g = clamp(g * 255, 0, 255);
+  b = clamp(b * 255, 0, 255);
+  a = clamp(a * 255, 0, 255);
 
   return r | (g << 8) | (b << 16) | (a << 24);
 }

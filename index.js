@@ -56,10 +56,6 @@ async function createShaderUrl(name) {
   return URL.createObjectURL(file);
 }
 
-function randomElement(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
 const frameSize = w * h * 4;
 const tileByteSize = tileSizeX * tileSizeY * 4;
 const tilesPerRow = Math.ceil(w / tileSizeX);
@@ -145,7 +141,7 @@ let doneLoad = new Promise((resolve) => {
   endLoad = resolve;
 });
 
-const shader = (await import(url)).fragment;
+const shader = workersCount === 0 ? (await import(url)).fragment : null;
 
 workers.forEach((worker) => {
   worker.addEventListener("message", (e) => {

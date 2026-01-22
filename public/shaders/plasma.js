@@ -1,11 +1,4 @@
-function color(r, g, b, a) {
-  r = Math.max(0, Math.min(r * 255, 255));
-  g = Math.max(0, Math.min(g * 255, 255));
-  b = Math.max(0, Math.min(b * 255, 255));
-  a = Math.max(0, Math.min(a * 255, 255));
-
-  return r | (g << 8) | (b << 16) | (a << 24);
-}
+import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
 
 /**
  * "Plasma" (JS Port)
@@ -72,5 +65,5 @@ export function fragment(x, y, t, w, h) {
   b = Math.fround(Math.tanh((7.0 * Math.exp(commonExp - 2.0 * y)) / b));
   a = Math.fround(Math.tanh((7.0 * Math.exp(commonExp)) / a));
 
-  return color(r, g, b, a);
+  return pack(r, g, b, a);
 }
