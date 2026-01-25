@@ -11,9 +11,12 @@ import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
+export function fragment(pos, res, t) {
   // 1. Aspect correction (Height-based scaling)
-  x = x * (w / h);
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // 2. Map normalized (-1 to 1) to virtual pixel space
   // We treat h as the reference height for coordinate scaling

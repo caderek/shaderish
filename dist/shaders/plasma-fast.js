@@ -17,8 +17,11 @@ function fastCos(x) {
   return sinTable[(((x + 1.5707) * (4096 / PI2)) | 0) & 4095];
 }
 
-export function fragment(x, y, t, w, h) {
-  x = Math.fround(x * (w / h));
+export function fragment(pos, t, w, h) {
+  let x = pos[0];
+  let y = pos[1];
+  x = (2 * x - w) / h;
+  y = -(2 * y - h) / h;
 
   const dotUV = Math.fround(x * x + y * y);
   const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));

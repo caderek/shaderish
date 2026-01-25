@@ -11,8 +11,11 @@ import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  x = x * (w / h);
+export function fragment(pos, t, w, h) {
+  let x = pos[0];
+  let y = pos[1];
+  x = (2 * x - w) / h;
+  y = -(2 * y - h) / h;
   // 1. Coordinates and Setup
   // GLSL: p = (F+F - r) / r.y / .7;
   // Since input x,y is already [-1, 1], we just divide by 0.7

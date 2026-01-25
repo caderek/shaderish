@@ -11,10 +11,13 @@ import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  // const [t, w, h] = uni;
+export function fragment(pos, t, w, h) {
+  let x = pos[0];
+  let y = pos[1];
+  x = (2 * x - w) / h;
+  y = -(2 * y - h) / h;
 
-  x = Math.fround(x * (w / h));
+  // x = Math.fround(x * (w / h));
   // 1. Z-Depth / Vignette
   const dotUV = Math.fround(x * x + y * y);
   const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));
