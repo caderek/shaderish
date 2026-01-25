@@ -27,10 +27,12 @@ const [tileSizeX, tileSizeY] = (search.get("tile") ?? "8x8")
 
 const url = await createShaderUrl(shaderName);
 
-const ANIMATE = 1;
-const MAX_WORKERS = Infinity;
-const MULTIPLE = Math.floor(window.innerWidth / 320);
-const MIN_SIZE = 320 * MULTIPLE;
+const state = {
+  play: true,
+};
+const MAX_WORKERS = 8; //Infinity;
+const MULTIPLE = Math.floor(window.innerWidth / w);
+const MIN_SIZE = w * MULTIPLE;
 const scale = MIN_SIZE / w;
 
 const canvas = document.querySelector("canvas", {
@@ -183,61 +185,73 @@ controlbuffer[CONTROL_BUFFER.tileSizeX] = tileSizeX;
 controlbuffer[CONTROL_BUFFER.tileSizeY] = tileSizeY;
 
 async function loop(elapsed = 0) {
-  if (workersCount > 0) {
-    await doneLoad;
-  }
-  const start = performance.now();
-  uniformsbuffer[0] = elapsed / 1000;
-  uniformsbuffer[1] = w;
-  uniformsbuffer[2] = h;
-  uniformsbuffer[3] = mouseX;
-  uniformsbuffer[4] = mouseY;
+  if (state.play) {
+    if (workersCount > 0) {
+      await doneLoad;
+    }
+    const start = performance.now();
+    uniformsbuffer[0] = elapsed / 1000;
+    uniformsbuffer[1] = w;
+    uniformsbuffer[2] = h;
+    uniformsbuffer[3] = mouseX;
+    uniformsbuffer[4] = mouseY;
 
-  if (workersCount > 0) {
-    workers.forEach((worker, i) => worker.postMessage(["runShader"]));
-    await Atomics.waitAsync(controlbuffer, CONTROL_BUFFER.workersDone, 0).value;
-    rendered = 0;
-    controlbuffer[CONTROL_BUFFER.tileCounter] = 0;
-    controlbuffer[CONTROL_BUFFER.workersDone] = 0;
-  } else {
-    runShader(
+    if (workersCount > 0) {
+      workers.forEach((worker, i) => worker.postMessage(["runShader"]));
+      await Atomics.waitAsync(controlbuffer, CONTROL_BUFFER.workersDone, 0)
+        .value;
+      rendered = 0;
+      controlbuffer[CONTROL_BUFFER.tileCounter] = 0;
+      controlbuffer[CONTROL_BUFFER.workersDone] = 0;
+    } else {
+      runShader(
+        framebuffer,
+        shader,
+        {
+          t: elapsed / 1000, // in seconds as most shaders are done!
+          w,
+          h,
+          mouseX,
+          mouseY,
+        },
+        0,
+        tilesCount,
+      );
+    }
+
+    const mid = performance.now();
+    untile(
       framebuffer,
-      shader,
-      {
-        t: elapsed / 1000, // in seconds as most shaders are done!
-        w,
-        h,
-        mouseX,
-        mouseY,
-      },
-      0,
-      tilesCount,
+      staging,
+      tileSizeX,
+      tileSizeY,
+      tilesPerRow,
+      tilesPerCol,
     );
+    ctx.putImageData(frame, 0, 0);
+
+    if (n % 10 === 0) {
+      const end = performance.now();
+      const takenShader = mid - start;
+      const takenClone = end - mid;
+      const takenAll = takenShader + takenClone;
+      const time = elapsed - prev;
+      const fps = time > 0 ? 1000 / time : 0;
+      fpsOut.innerText = `FPS: ${fps.toFixed(1)}, All: ${takenAll.toFixed(2).padStart(5, "0")}ms, Shader: ${takenShader.toFixed(2).padStart(5, "0")}ms, Clone: ${takenClone.toFixed(2).padStart(5, "0")}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px, Tile: ${tileSizeX}x${tileSizeY}`;
+      n = 0;
+    }
+
+    prev = elapsed;
+    n++;
+
+    // const sourceView = framebuffer.subarray(0, frameSize);
+    // staging.set(sourceView);
   }
-
-  const mid = performance.now();
-  untile(framebuffer, staging, tileSizeX, tileSizeY, tilesPerRow, tilesPerCol);
-  ctx.putImageData(frame, 0, 0);
-
-  if (n % 10 === 0) {
-    const end = performance.now();
-    const takenShader = mid - start;
-    const takenClone = end - mid;
-    const takenAll = takenShader + takenClone;
-    const time = elapsed - prev;
-    const fps = time > 0 ? 1000 / time : 0;
-    fpsOut.innerText = `FPS: ${fps.toFixed(1)}, All: ${takenAll.toFixed(2).padStart(5, "0")}ms, Shader: ${takenShader.toFixed(2).padStart(5, "0")}ms, Clone: ${takenClone.toFixed(2).padStart(5, "0")}ms, Threads: ${workersCount ?? 1}, Res: ${w}x${h}px, Tile: ${tileSizeX}x${tileSizeY}`;
-    n = 0;
-  }
-
-  prev = elapsed;
-  n++;
-
-  // const sourceView = framebuffer.subarray(0, frameSize);
-  // staging.set(sourceView);
-  if (ANIMATE) {
-    requestAnimationFrame(loop);
-  }
+  requestAnimationFrame(loop);
 }
+
+canvas.addEventListener("click", () => {
+  state.play = !state.play;
+});
 
 loop();

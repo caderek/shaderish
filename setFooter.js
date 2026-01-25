@@ -26,7 +26,18 @@ export function setFooter(search) {
       .join(" | ") +
     "</p>" +
     "<p>" +
-    ["1920x1080", "1280x720", "640x360", "320x180", "160x90"]
+    [
+      "1920x1080",
+      "1280x720",
+      "640x360",
+      "320x180",
+      "160x90",
+      "480x480",
+      "240x240",
+      "512x512",
+      "256x256",
+      "128x128",
+    ]
       .map(
         (item) =>
           `<a href="/?shader=${search.get("shader") ?? "singularity"}&res=${item}&tile=${search.get("tile") ?? "8x8"}">${item}p</a>`,
