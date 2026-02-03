@@ -35,10 +35,7 @@ const MULTIPLE = Math.floor(window.innerWidth / w);
 const MIN_SIZE = w * MULTIPLE;
 const scale = MIN_SIZE / w;
 
-const canvas = document.querySelector("canvas", {
-  alpha: false,
-  willReadFrequently: false,
-});
+const canvas = document.querySelector("canvas");
 
 canvas.width = w;
 canvas.height = h;
@@ -47,7 +44,12 @@ canvas.style.setProperty("--scale", scale);
 canvas.style.setProperty("--ratio", `${w} / ${h}`);
 
 const fpsOut = document.getElementById("fps");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d", {
+  alpha: false,
+  willReadFrequently: false,
+});
+
+ctx.imageSmoothingEnabled = false;
 
 async function createShaderUrl(name) {
   const blob = await fetch(`/shaders/${name}.js`).then((res) => res.blob());

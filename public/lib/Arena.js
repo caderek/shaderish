@@ -9,6 +9,7 @@ export class Arena {
   #locked = false;
   #maxSize;
 
+  #consts = [];
   #buffer;
   #bytes;
 
@@ -19,9 +20,10 @@ export class Arena {
     this.#maxSize = maxSize ?? DEFAULT_MAX_SIZE;
     this.#buffer = new ArrayBuffer(len, { maxByteLength: this.#maxSize });
     this.#bytes = new Uint8Array(this.#buffer, 0); // test it if it actually trackes the length of uderlying buffer
+    this.fixed = new ConstArena(this.#consts);
   }
 
-  #directAlloc(byteSize) {
+  #alloc(byteSize) {
     if (this.#locked) {
       throw new Error(
         "Arena is already locked, you can't allocate new values, declare all your vectors/matrices upfront.",
@@ -50,6 +52,14 @@ export class Arena {
     }
   }
 
+  #registerConstants() {
+    for (const item of this.#consts) {
+      console.log({ constr: item[0], args: item[1] });
+      item[0].create;
+      // return Vec2.create(this.#buffer, this.#alloc(Vec2.byteSize), ...args);
+    }
+  }
+
   lock() {
     if (this.#locked) {
       throw new Error(
@@ -58,6 +68,7 @@ export class Arena {
     }
 
     this.#resetBytes = this.#bytes.slice(0, this.#ptr);
+    this.#registerConstants();
     this.#locked = true;
   }
 
@@ -75,11 +86,11 @@ export class Arena {
   }
 
   vec2(...args) {
-    return Vec2.create(this.#buffer, this.#directAlloc(Vec2.byteSize), ...args);
+    return Vec2.create(this.#buffer, this.#alloc(Vec2.byteSize), ...args);
   }
 
   vec4(...args) {
-    return Vec4.create(this.#buffer, this.#directAlloc(Vec4.byteSize), ...args);
+    return Vec4.create(this.#buffer, this.#alloc(Vec4.byteSize), ...args);
   }
 
   get ptr() {
@@ -92,5 +103,25 @@ export class Arena {
 
   get buffer() {
     return this.#buffer;
+  }
+}
+
+class ConstArena {
+  #target;
+
+  constructor(target) {
+    this.#target = target;
+  }
+
+  vec2(...args) {
+    this.#target.push([Vec2, args]);
+  }
+
+  vec4(...args) {
+    this.#target.push([Vec4, args]);
+  }
+
+  view() {
+    console.log(this.#target);
   }
 }
