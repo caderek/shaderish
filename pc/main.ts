@@ -28,7 +28,7 @@ async function main() {
       buff[i] = Math.floor(Math.random() * 256);
     }
     screen.refresh();
-    requestAnimationFrame(loop);
+    //requestAnimationFrame(loop);
   }
 
   loop();
