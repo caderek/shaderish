@@ -45,7 +45,7 @@ canvas.style.setProperty("--ratio", `${w} / ${h}`);
 
 const fpsOut = document.getElementById("fps");
 const ctx = canvas.getContext("2d", {
-  alpha: false,
+  alpha: true,
   willReadFrequently: false,
 });
 

@@ -1,4 +1,4 @@
-import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
+import { pack } from "http://localhost:5175/lib/fast-util.js";
 
 // --- PRE-COMPUTATION (Run once) ---
 const TABLE_SIZE = 4096;
@@ -17,11 +17,11 @@ function fastCos(x) {
   return sinTable[(((x + 1.5707) * (4096 / PI2)) | 0) & 4095];
 }
 
-export function fragment(pos, t, w, h) {
-  let x = pos[0];
-  let y = pos[1];
-  x = (2 * x - w) / h;
-  y = -(2 * y - h) / h;
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   const dotUV = Math.fround(x * x + y * y);
   const zVal = Math.fround(4.0 - 4.0 * Math.abs(0.7 - dotUV));

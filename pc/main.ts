@@ -13,7 +13,7 @@ async function getRomData() {
 async function main() {
   const romData = await getRomData();
   const rom = new ROM(romData);
-  console.log({ rom, font: rom.font, size: rom.size });
+  console.log({ rom, font: rom.font, bootloader: rom.bootloader });
 
   const width = 640 * 1;
   const height = 360 * 1;

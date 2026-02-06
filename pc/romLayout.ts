@@ -1,2 +1,5 @@
-export const TEXTMODE_FONT_OFFSET = 0;
-export const TEXTMODE_FONT_SIZE = 2 ** 11; // 2 kB
+export const BOOTLOADER_MAX_BYTE_LENGTH = 2 ** 12; // 4 KiB
+export const TEXTMODE_FONT_BYTE_LENGTH = 2 ** 12; // 4 KiB
+
+export const BOOTLOADER_OFFSET = 0;
+export const TEXTMODE_FONT_OFFSET = BOOTLOADER_MAX_BYTE_LENGTH;
