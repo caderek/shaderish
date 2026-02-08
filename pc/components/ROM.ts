@@ -1,33 +1,52 @@
+import { ROM_MAPPING_BYTE_LENGTH, ROM_MAPPING_OFFSET } from "../ramLayout";
 import {
   TEXTMODE_FONT_OFFSET,
   TEXTMODE_FONT_BYTE_LENGTH,
-  BOOTLOADER_OFFSET,
-  BOOTLOADER_MAX_BYTE_LENGTH,
+  FIRMWARE_OFFSET,
+  FIRMWARE_MAX_BYTE_LENGTH,
 } from "../romLayout";
 
+// @todo add NVRAM to store bios settings etc
+
 export class ROM {
-  #data: ArrayBuffer;
-  #bootloader: Uint8Array;
+  #firmware: Uint8Array;
   #font: Uint8Array;
 
-  constructor(data: ArrayBuffer) {
-    this.#data = data;
+  constructor(data: ArrayBuffer, memory: WebAssembly.Memory) {
+    this.#mapToMemory(data, memory);
 
-    this.#bootloader = new Uint8Array(
-      this.#data,
-      BOOTLOADER_OFFSET,
-      BOOTLOADER_MAX_BYTE_LENGTH,
+    this.#firmware = new Uint8Array(
+      memory.buffer,
+      ROM_MAPPING_OFFSET + FIRMWARE_OFFSET,
+      FIRMWARE_MAX_BYTE_LENGTH,
     );
 
     this.#font = new Uint8Array(
-      this.#data,
-      TEXTMODE_FONT_OFFSET,
+      memory.buffer,
+      ROM_MAPPING_OFFSET + TEXTMODE_FONT_OFFSET,
       TEXTMODE_FONT_BYTE_LENGTH,
     );
   }
 
-  get bootloader() {
-    return this.#bootloader;
+  #mapToMemory(data: ArrayBuffer, memory: WebAssembly.Memory) {
+    const sourceView = new Uint8Array(data);
+    const targetView = new Uint8Array(
+      memory.buffer,
+      ROM_MAPPING_OFFSET,
+      ROM_MAPPING_BYTE_LENGTH,
+    );
+
+    if (sourceView.length !== targetView.length) {
+      throw new Error(
+        "The size of rom data does not much the memory maping area.",
+      );
+    }
+
+    targetView.set(sourceView);
+  }
+
+  get firmware() {
+    return this.#firmware;
   }
 
   get font() {
