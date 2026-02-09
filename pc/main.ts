@@ -26,7 +26,8 @@ async function getSplashScreen(textbuffer: Uint8Array) {
   const flatText = text.split("\n").join("");
 
   for (const [i, char] of flatText.split("").entries()) {
-    textbuffer[i * 2] = char.charCodeAt(0);
+    const code = char.charCodeAt(0);
+    textbuffer[i * 2] = code;
     textbuffer[i * 2 + 1] = 0b11110000;
   }
 }
@@ -59,25 +60,40 @@ async function main() {
     FRAMEBUFFER_BYTE_LENGTH,
   );
 
-  for (let i = 0; i < framebufferView.length; i++) {
-    framebufferView[i] = Math.floor(Math.random() * 256);
-  }
-
-  videoController.draw();
-
   const screen = new Screen(framebufferView, width, height);
 
-  screen.bind(document.body);
+  const $main = document.querySelector("main")!;
+  const $footer = document.querySelector("footer")!;
 
-  function loop() {
+  screen.bind($main);
+
+  let prevT = 0;
+  let cycle = 0;
+
+  function loop(t) {
+    const start = performance.now();
     // for (let i = 0; i < framebufferView.length; i++) {
     //   framebufferView[i] = Math.floor(Math.random() * 256);
     // }
+    videoController.draw();
     screen.refresh();
-    // requestAnimationFrame(loop);
+    const time = performance.now() - start;
+
+    if (cycle == 0) {
+      const theoreticalFps = 1000 / time;
+      const realFps = 1000 / (t - prevT);
+      $footer.textContent =
+        `Real FPS: ${realFps.toFixed(1)} | Theoretical FPS: ${theoreticalFps.toFixed(1)} | Render time: ${time.toFixed(1).padStart(2, "0")}ms` +
+        `| Heap used: ${(performance.memory.usedJSHeapSize / 2 ** 20).toFixed(1)} MiB | Heap reserved: ${(performance.memory.totalJSHeapSize / 2 ** 20).toFixed(2)} MiB`;
+    }
+
+    prevT = t;
+
+    cycle = (cycle + 1) % 20;
+    requestAnimationFrame(loop);
   }
 
-  loop();
+  loop(0);
 }
 
 main();

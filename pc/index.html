@@ -19,19 +19,32 @@
       }
 
       body {
-        background: black;
-        display: grid;
-        place-content: center;
+        background: #191919;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+      }
+
+      *::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
       }
 
       .screen {
-        --scale: 2;
+        --scale: 3;
         width: calc(640px * var(--scale));
         image-rendering: pixelated;
+      }
+
+      footer {
+        color: green;
+        font-family: monospace;
+        font-size: 1rem;
+        padding: 0.5rem 0;
       }
     </style>
   </head>
   <body>
+    <main></main>
+    <footer>boho</footer>
     <script type="module" src="main.ts"></script>
   </body>
 </html>
