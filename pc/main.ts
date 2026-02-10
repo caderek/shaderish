@@ -10,6 +10,7 @@ import {
   TEXT_BUFFER_OFFSET,
 } from "./ramLayout.ts";
 import { VideoController } from "./components/VideoController.ts";
+import { initStats } from "./stats.ts";
 
 async function getRomData() {
   const res = await fetch("/data/rom.bin", {
@@ -23,12 +24,15 @@ async function getRomData() {
 async function getSplashScreen(textbuffer: Uint8Array) {
   const res = await fetch("/data/splash.txt");
   const text = await res.text();
-  const flatText = text.split("\n").join("");
+  const flatText = text
+    .split("\n")
+    .map((line) => line.padEnd(106, " "))
+    .join("");
 
   for (const [i, char] of flatText.split("").entries()) {
     const code = char.charCodeAt(0);
     textbuffer[i * 2] = code;
-    textbuffer[i * 2 + 1] = 0b11110000;
+    textbuffer[i * 2 + 1] = 0b0_0_001_111;
   }
 }
 
@@ -64,32 +68,17 @@ async function main() {
 
   const $main = document.querySelector("main")!;
   const $footer = document.querySelector("footer")!;
+  const stats = initStats($footer);
 
   screen.bind($main);
 
-  let prevT = 0;
-  let cycle = 0;
+  function loop(t: number) {
+    stats.start(t);
 
-  function loop(t) {
-    const start = performance.now();
-    // for (let i = 0; i < framebufferView.length; i++) {
-    //   framebufferView[i] = Math.floor(Math.random() * 256);
-    // }
     videoController.draw();
     screen.refresh();
-    const time = performance.now() - start;
 
-    if (cycle == 0) {
-      const theoreticalFps = 1000 / time;
-      const realFps = 1000 / (t - prevT);
-      $footer.textContent =
-        `Real FPS: ${realFps.toFixed(1)} | Theoretical FPS: ${theoreticalFps.toFixed(1)} | Render time: ${time.toFixed(1).padStart(2, "0")}ms` +
-        `| Heap used: ${(performance.memory.usedJSHeapSize / 2 ** 20).toFixed(1)} MiB | Heap reserved: ${(performance.memory.totalJSHeapSize / 2 ** 20).toFixed(2)} MiB`;
-    }
-
-    prevT = t;
-
-    cycle = (cycle + 1) % 20;
+    stats.complete();
     requestAnimationFrame(loop);
   }
 

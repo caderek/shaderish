@@ -7,31 +7,82 @@ import {
 } from "../ramLayout";
 import { TEXTMODE_FONT_BYTE_LENGTH, TEXTMODE_FONT_OFFSET } from "../romLayout";
 
-const TEXTMODE_COLS = 105;
-const TEXTMODE_ROWS = 25;
+const TEXTMODE_COLS = 106;
+const TEXTMODE_ROWS = 24;
 const TEXTMODE_CELLS = TEXTMODE_COLS * TEXTMODE_ROWS;
-
 const FONT_TEXTURE_HEIGHT = 16;
-
 const FONT_WIDTH = 6;
-const FONT_HEIGHT = 14;
+const FONT_HEIGHT = 15;
 const FONT_STRIDE = FONT_WIDTH * FONT_HEIGHT;
-
-const PAD_X = 5;
-const PAD_Y = 5;
-
+const PAD_X = 2;
+const PAD_Y = 0;
 const TEXT_PIXEL_WIDTH = TEXTMODE_COLS * FONT_WIDTH;
-
 const FRAME_STRIDE = TEXT_PIXEL_WIDTH + PAD_X * 2;
+
+// Bit,Label,Component,Description
+// A,Bit 7,Font Page,"0 = Standard, 1 = Alt/Graphics"
+// B,Bit 6,Palette Flag,"0 = Palette Bank A, 1 = Palette Bank B"
+// C,Bit 5,BG bit 2,High bit of Background color index
+// D,Bit 4,BG bit 1,Mid bit of Background color index
+// E,Bit 3,BG bit 0,Low bit of Background color index
+// F,Bit 2,FG bit 2,High bit of Foreground color index
+// G,Bit 1,FG bit 1,Mid bit of Foreground color index
+// H,Bit 0,FG bit 0,Low bit of Foreground color index
+//
+function swap32(val: number) {
+  return (
+    ((val & 0xff) << 24) | // Move RR to AA position
+    ((val & 0xff00) << 8) | // Move GG to BB position
+    ((val >> 8) & 0xff00) | // Move BB to GG position
+    ((val >> 24) & 0xff) // Move AA to RR position
+  );
+}
+
+const palette = new Uint32Array([
+  // foreground
+  swap32(0x000000ff), // 000
+  swap32(0x0000ffff), // 001
+  swap32(0x00ff00ff), // 010
+  swap32(0x00ffffff), // 011
+  swap32(0xff0000ff), // 100
+  swap32(0xff00ffff), // 101
+  swap32(0xffff00ff), // 110
+  swap32(0xffffffff), // 111
+  // background
+  swap32(0x000000ff), // 000
+  swap32(0x0000ffff), // 001
+  swap32(0x00ff00ff), // 010
+  swap32(0x00ffffff), // 011
+  swap32(0xff0000ff), // 100
+  swap32(0xff00ffff), // 101
+  swap32(0xffff00ff), // 110
+  swap32(0xffffffff), // 111
+  // foreground alt
+  swap32(0x00000055), // 000
+  swap32(0x0000ff55), // 001
+  swap32(0x00ff0055), // 010
+  swap32(0x00ffff55), // 011
+  swap32(0xff000055), // 100
+  swap32(0xff00ff55), // 101
+  swap32(0xffff0055), // 110
+  swap32(0xffffff55), // 111
+  // background alt
+  swap32(0x00000055), // 000
+  swap32(0x0000ff55), // 001
+  swap32(0x00ff0055), // 010
+  swap32(0x00ffff55), // 011
+  swap32(0xff000055), // 100
+  swap32(0xff00ff55), // 101
+  swap32(0xffff0055), // 110
+  swap32(0xffffff55), // 111
+]);
 
 export class VideoController {
   mode: "text" | "graphics" = "text";
 
   #textBuffer: Uint8Array;
   #frameBufferView: Uint32Array;
-  #tempView = new Uint32Array(TEXTMODE_CELLS * FONT_STRIDE);
   #font: Uint32Array;
-  #scratchpad = new Uint32Array(FONT_STRIDE);
 
   constructor(memory: WebAssembly.Memory) {
     this.#textBuffer = new Uint8Array(
@@ -79,46 +130,43 @@ export class VideoController {
   }
 
   draw() {
-    for (let i = 0, cell = 0; i < TEXTMODE_CELLS * 2; i += 2, cell++) {
-      const char = this.#textBuffer[i];
-      const style = this.#textBuffer[i + 1];
-      const fg = style >> 4;
-      const bg = (style >> 1) & 0b111;
-      const alt = style & 0b1;
-      const glyphPos = char + 128 * alt;
-      const glyphOffset = glyphPos * FONT_STRIDE;
+    const font = this.#font;
+    const text = this.#textBuffer;
+    const frame = this.#frameBufferView;
 
-      // @todo optimize it to not create any objects, jsut write directly
-      const source = new Uint32Array(
-        this.#font.buffer,
-        glyphOffset * 4,
-        FONT_STRIDE,
-      );
+    let cell = 0;
 
-      const fgColor = 0xffb2dbeb;
-      const bgColor = 0xff282828;
+    for (let i = 0; i < TEXTMODE_CELLS * 2; i += 2, cell++) {
+      const char = text[i];
+      const style = text[i + 1];
 
-      for (let x = 0; x < source.length; x++) {
-        const mask = source[x];
-        this.#scratchpad[x] = (mask & fgColor) | (~mask & bgColor);
-      }
+      const fg = style & 0b111;
+      const bg = (style >> 3) & 0b111;
+      const shade = (style >> 6) & 0b1;
+      const alt = style >> 7;
 
-      this.#tempView.set(this.#scratchpad, cell * FONT_STRIDE);
-    }
+      const glyphPos = char + (alt << 7);
+      const glyphBase = glyphPos * FONT_STRIDE;
 
-    for (let tile = 0; tile < TEXTMODE_CELLS; tile++) {
-      const tileX = tile % TEXTMODE_COLS;
-      const tileY = (tile / TEXTMODE_COLS) | 0;
+      const tileX = cell % TEXTMODE_COLS;
+      const tileY = (cell / TEXTMODE_COLS) | 0;
+
+      const frameBaseX = PAD_X + tileX * FONT_WIDTH;
+      const frameBaseY = PAD_Y + tileY * FONT_HEIGHT;
+
+      // const fgg = cell % 8;
+      // const bgg = (cell + 1) % 8;
+      const fgColor = palette[fg + 16 * shade];
+      const bgColor = palette[bg + 16 * shade + 8];
 
       for (let row = 0; row < FONT_HEIGHT; row++) {
-        const srcBase = tile * FONT_STRIDE + row * FONT_WIDTH;
+        const fontRowBase = glyphBase + row * FONT_WIDTH;
+        const frameRowBase = (frameBaseY + row) * FRAME_STRIDE + frameBaseX;
 
-        const source = this.#tempView.subarray(srcBase, srcBase + FONT_WIDTH);
-        const framePixelX = PAD_X + tileX * FONT_WIDTH;
-        const framePixelY = PAD_Y + tileY * FONT_HEIGHT + row;
-        const offset = framePixelY * FRAME_STRIDE + framePixelX;
-
-        this.#frameBufferView.set(source, offset);
+        for (let col = 0; col < FONT_WIDTH; col++) {
+          const mask = font[fontRowBase + col];
+          frame[frameRowBase + col] = (mask & fgColor) | (~mask & bgColor);
+        }
       }
     }
   }

@@ -1,25 +1,24 @@
-#########################################################################################################
-##                                                                                                     ##
-##                                             Hello World!                                            ##
-##                                                                                                     ##
-##                                         This is not a drill.                                        ##
-##                                                                                                     ##
-##   for (let step = 0; step < rawFont.length / FONT_TEXTURE_HEIGHT; step++) {                         ##
-##     for (let row = 0; row < FONT_HEIGHT; row++) {                                                   ##
-##       const i = step * FONT_TEXTURE_HEIGHT + row;                                                   ##
-##       const j = step * FONT_STRIDE + row * FONT_WIDTH;                                              ##
-##       const val = rawFont[i];                                                                       ##
-##                                                                                                     ##
-##       font[j + 0] = ((val >> 7) & 1) * 0xffffffff;                                                  ##
-##       font[j + 1] = ((val >> 6) & 1) * 0xffffffff;                                                  ##
-##       font[j + 2] = ((val >> 5) & 1) * 0xffffffff;                                                  ##
-##       font[j + 3] = ((val >> 4) & 1) * 0xffffffff;                                                  ##
-##       font[j + 4] = ((val >> 3) & 1) * 0xffffffff;                                                  ##
-##       font[j + 5] = ((val >> 2) & 1) * 0xffffffff;                                                  ##
-##     }                                                                                               ##
-##   }                                                                                                 ##
-##                                                                                                     ##
-##   return font;                                                                                      ##
-## }                                                                                                   ##
-##                                                                                                     ##
-#########################################################################################################
+ ~/Projects/hello  |   1| ### main.pl ####################################################################
+  build/           |   2| complete() {                                                                    
+  src/             |   3|   const time = performance.now() - renderStart;
+    .gitignore     |   4| 
+    .env           |   5|   if (cycle == 0) {
+    main.pl        |   6|     const theoreticalFps = 1000 / time
+    config.json    |   7|     const realFps = 1000 / (currentT - prevT)
+    README.md      |   8|     let text = ""
+                   |   9|     text += `Real FPS: ${realFps.toFixed(1)}`
+                   |  10|     text += ` | Theoretical FPS: ${theoreticalFps.toFixed(1)}`
+                   |  11|     text += ` | Render time: ${time.toFixed(1).padStart(2, "0")}ms`
+                   |  12| 
+                   |  13|     if (memory) {
+                   |  14|       text += ` | Heap used: ${(memory.usedJSHeapSize / 2**20).toFixed(1)} MiB`
+                   |  15|       text += ` | Heap reserved: ${(memory.totalJSHeapSize / 2**20).toFixed(2)}`
+                   |  16|     }
+                   |  17| 
+                   |  18|     $el.textContent = text;
+                   |  19|   }
+                   |  20| 
+                   |  21|   prevT = currentT;
+                   |  22|   cycle = (cycle + 1) % 20;
+                   |  23| }
+                   |  24| ################################################################################

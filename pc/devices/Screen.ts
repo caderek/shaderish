@@ -11,7 +11,8 @@ export class Screen {
     this.#canvas.width = width;
     this.#canvas.height = height;
     this.#canvas.classList.add("screen");
-    this.#canvas.style.background = "black";
+    this.#canvas.style.background = "#282828";
+    this.#canvas.style.setProperty("--base-width", String(width));
     this.#ctx = this.#canvas.getContext("2d", {
       willReadFrequently: false,
     });
