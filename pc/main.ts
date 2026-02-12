@@ -32,7 +32,7 @@ async function getSplashScreen(textbuffer: Uint8Array) {
   for (const [i, char] of flatText.split("").entries()) {
     const code = char.charCodeAt(0);
     textbuffer[i * 2] = code;
-    textbuffer[i * 2 + 1] = 0b0_0_001_111;
+    textbuffer[i * 2 + 1] = 0b0001_0110;
   }
 }
 
@@ -79,7 +79,7 @@ async function main() {
     screen.refresh();
 
     stats.complete();
-    requestAnimationFrame(loop);
+    // requestAnimationFrame(loop);
   }
 
   loop(0);
