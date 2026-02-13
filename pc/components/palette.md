@@ -5,6 +5,10 @@
 | **C-E** | `1100-1110` | **Grn/Cyn/Blu** | The "Success/Info" gradient.         |
 | **F**   | `1111`      | **Muted Gray**  | The "Noise" suppressor.              |
 
+- 00xx: Backgrounds (Elevation/Depth)
+- 01xx: Foregrounds (Legibility/Contrast)
+- 1xxx: Accents (State/Type)
+
 ## Palettes to check out:
 
 - Gruvbox (MIT)

@@ -30,7 +30,10 @@ async function getSplashScreen(textbuffer: Uint8Array) {
     .join("");
 
   for (const [i, char] of flatText.split("").entries()) {
-    const code = char.charCodeAt(0);
+    let code = char.charCodeAt(0);
+    // if (code === 0x23) {
+    //   code = 159;
+    // }
     textbuffer[i * 2] = code;
     textbuffer[i * 2 + 1] = 0b0001_0110;
   }
@@ -72,14 +75,20 @@ async function main() {
 
   screen.bind($main);
 
+  let i = 0;
+
   function loop(t: number) {
     stats.start(t);
 
-    videoController.draw();
-    screen.refresh();
+    if (i === 0) {
+      videoController.draw();
+      screen.refresh();
+    }
 
     stats.complete();
-    // requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
+
+    i = (i + 1) % 1;
   }
 
   loop(0);
