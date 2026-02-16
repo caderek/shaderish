@@ -22,21 +22,10 @@ async function getRomData() {
 }
 
 async function getSplashScreen(textbuffer: Uint8Array) {
-  const res = await fetch("/data/splash.txt");
-  const text = await res.text();
-  const flatText = text
-    .split("\n")
-    .map((line) => line.padEnd(106, " "))
-    .join("");
-
-  for (const [i, char] of flatText.split("").entries()) {
-    let code = char.charCodeAt(0);
-    // if (code === 0x23) {
-    //   code = 159;
-    // }
-    textbuffer[i * 2] = code;
-    textbuffer[i * 2 + 1] = 0b0001_0110;
-  }
+  const res = await fetch("/data/splash.bin");
+  const text = await res.arrayBuffer();
+  const buffer = new Uint8Array(text);
+  textbuffer.set(buffer, 0);
 }
 
 async function main() {
@@ -47,12 +36,18 @@ async function main() {
   const romData = await getRomData();
   const rom = new ROM(romData, systemMemory);
 
-  console.log({ rom, font: rom.font, frimware: rom.firmware });
+  console.log({
+    rom,
+    font: rom.font,
+    frimware: rom.firmware,
+    palettes: rom.palettes,
+  });
 
   const width = 640 * 1;
   const height = 360 * 1;
 
   const videoController = new VideoController(systemMemory);
+
   await getSplashScreen(
     new Uint8Array(
       systemMemory.buffer,
@@ -86,7 +81,7 @@ async function main() {
     }
 
     stats.complete();
-    requestAnimationFrame(loop);
+    // requestAnimationFrame(loop);
 
     i = (i + 1) % 1;
   }

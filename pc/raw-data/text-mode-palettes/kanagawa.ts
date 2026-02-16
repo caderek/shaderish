@@ -1,4 +1,4 @@
-import { swap32 } from "../../../util/colors.ts";
+import { swap32 } from "../../util/colors.ts";
 
 export const kanagawa = new Uint32Array([
   swap32(0x16161dff), // 0 0000 bg0 | high contrast

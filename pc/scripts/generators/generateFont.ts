@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 export function readPbm(filePath: string) {
   const ppm = fs.readFileSync(filePath);

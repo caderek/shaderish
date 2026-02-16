@@ -1,4 +1,4 @@
-import { swap32 } from "../../../util/colors.ts";
+import { swap32 } from "../../util/colors.ts";
 
 export const sonokai = new Uint32Array([
   swap32(0x211f21ff), // 0 0000 bg0 | high contrast

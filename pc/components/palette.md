@@ -11,18 +11,8 @@
 
 ## Palettes to check out:
 
-- Gruvbox (MIT)
-- Kanagawa (MIT)
-- Catppuccin (MIT)
-- Nord (MIT)
-- Tokyo Night (MIT)
-- Rose Pine (MIT)
-- Everforest (MIT)
-- Solarized (MIT)
 - One Dark (MIT)
 - Ayu (MIT)
-- Night Owl (MIT)
 - Cobalt2 (MIT)
-- Sonokai (MIT)
 - oxocarbon (MIT)
 - gruvbox-material (MIT)

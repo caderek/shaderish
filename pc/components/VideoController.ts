@@ -5,8 +5,12 @@ import {
   TEXT_BUFFER_BYTE_LENGTH,
   ROM_MAPPING_OFFSET,
 } from "../ramLayout";
-import { TEXTMODE_FONT_BYTE_LENGTH, TEXTMODE_FONT_OFFSET } from "../romLayout";
-import { palettes } from "../scripts/generators/generateTextmodePalettes";
+import {
+  PALETTES_BYTE_LENGTH,
+  PALETTES_OFFSET,
+  TEXTMODE_FONT_BYTE_LENGTH,
+  TEXTMODE_FONT_OFFSET,
+} from "../romLayout";
 
 const TEXTMODE_COLS = 106;
 const TEXTMODE_ROWS = 24;
@@ -20,16 +24,14 @@ const PAD_Y = 0;
 const TEXT_PIXEL_WIDTH = TEXTMODE_COLS * FONT_WIDTH;
 const FRAME_STRIDE = TEXT_PIXEL_WIDTH + PAD_X * 2;
 
-const paletteId = 9;
-const palleteOffset = 64 * paletteId;
-const palette = new Uint32Array(palettes.buffer, palleteOffset, 16);
-
 export class VideoController {
   mode: "text" | "graphics" = "text";
 
   #textBuffer: Uint8Array;
   #frameBufferView: Uint32Array;
   #font: Uint32Array;
+  #palettes: Uint32Array;
+  #paletteId = 11;
 
   constructor(memory: WebAssembly.Memory) {
     this.#textBuffer = new Uint8Array(
@@ -43,6 +45,15 @@ export class VideoController {
       FRAMEBUFFER_OFFSET,
       FRAMEBUFFER_BYTE_LENGTH / 4,
     );
+
+    this.#palettes = new Uint32Array(
+      memory.buffer,
+      PALETTES_OFFSET,
+      PALETTES_BYTE_LENGTH / 4,
+    );
+
+    // Fill the screen with the main background color
+    this.#frameBufferView.fill(this.#palettes[this.#paletteId * 16 + 0]);
 
     const memoryFontOffset = ROM_MAPPING_OFFSET + TEXTMODE_FONT_OFFSET;
 
@@ -80,12 +91,12 @@ export class VideoController {
     const font = this.#font;
     const text = this.#textBuffer;
     const frame = this.#frameBufferView;
+    const paletteOffset = this.#paletteId * 16;
 
     let cell = 0;
 
     for (let i = 0; i < TEXTMODE_CELLS * 2; i += 2, cell++) {
-      const char = text[i]; //+ 128; // add 128 to switch to alt
-      // const char = Math.floor(Math.random() * 128) + 128;
+      const char = text[i];
       const style = text[i + 1];
 
       const fg = style & 0b1111;
@@ -101,8 +112,8 @@ export class VideoController {
 
       const fgg = (cell % 12) + 4;
       const bgg = cell % 4;
-      const fgColor = palette[fgg];
-      const bgColor = palette[bg];
+      const fgColor = this.#palettes[paletteOffset + fg];
+      const bgColor = this.#palettes[paletteOffset + bg];
 
       for (let row = 0; row < FONT_HEIGHT; row++) {
         const fontRowBase = glyphBase + row * FONT_WIDTH;

@@ -4,6 +4,8 @@ import {
   TEXTMODE_FONT_BYTE_LENGTH,
   FIRMWARE_OFFSET,
   FIRMWARE_MAX_BYTE_LENGTH,
+  PALETTES_OFFSET,
+  PALETTES_BYTE_LENGTH,
 } from "../romLayout";
 
 // @todo add NVRAM to store bios settings etc
@@ -11,6 +13,7 @@ import {
 export class ROM {
   #firmware: Uint8Array;
   #font: Uint8Array;
+  #palettes: Uint32Array;
 
   constructor(data: ArrayBuffer, memory: WebAssembly.Memory) {
     this.#mapToMemory(data, memory);
@@ -25,6 +28,12 @@ export class ROM {
       memory.buffer,
       ROM_MAPPING_OFFSET + TEXTMODE_FONT_OFFSET,
       TEXTMODE_FONT_BYTE_LENGTH,
+    );
+
+    this.#palettes = new Uint32Array(
+      memory.buffer,
+      ROM_MAPPING_OFFSET + PALETTES_OFFSET,
+      PALETTES_BYTE_LENGTH / 4,
     );
   }
 
@@ -51,5 +60,9 @@ export class ROM {
 
   get font() {
     return this.#font;
+  }
+
+  get palettes() {
+    return this.#palettes;
   }
 }
