@@ -81,7 +81,7 @@ async function main() {
     }
 
     stats.complete();
-    // requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
 
     i = (i + 1) % 1;
   }

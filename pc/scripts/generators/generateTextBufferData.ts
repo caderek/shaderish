@@ -220,9 +220,7 @@ class TerminalDriver {
         const color = getPaletteColor(this.#argsBuffer);
         if (color !== null) {
           this.#bgColor = color;
-          console.log({ color });
         } else {
-          console.log({ color });
           // dump raw command
         }
         break;
