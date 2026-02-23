@@ -11,6 +11,7 @@ import {
 } from "./ramLayout.ts";
 import { VideoController } from "./components/VideoController.ts";
 import { initStats } from "./stats.ts";
+import { GamepadController } from "./components/GamepadController.ts";
 
 async function getRomData() {
   const res = await fetch("/data/rom.bin", {
@@ -32,6 +33,7 @@ async function main() {
   const ram = new RAM(2 ** 14); // 16_384 pages, 1 GiB
   const mmu = new MMU(ram);
   const systemMemory = mmu.reserve(MAX_SYSTEM_PAGES, MAX_SYSTEM_PAGES);
+  const gamepads = new GamepadController(systemMemory);
 
   const romData = await getRomData();
   const rom = new ROM(romData, systemMemory);
@@ -70,20 +72,15 @@ async function main() {
 
   screen.bind($main);
 
-  let i = 0;
-
   function loop(t: number) {
     stats.start(t);
 
-    if (i === 0) {
-      videoController.draw();
-      screen.refresh();
-    }
+    gamepads.getData();
+    videoController.draw();
+    screen.refresh();
 
     stats.complete();
-    requestAnimationFrame(loop);
-
-    i = (i + 1) % 1;
+    //requestAnimationFrame(loop);
   }
 
   loop(0);

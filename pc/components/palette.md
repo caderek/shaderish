@@ -11,8 +11,6 @@
 
 ## Palettes to check out:
 
-- One Dark (MIT)
-- Ayu (MIT)
 - Cobalt2 (MIT)
 - oxocarbon (MIT)
 - gruvbox-material (MIT)

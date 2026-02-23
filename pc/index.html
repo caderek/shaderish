@@ -20,6 +20,7 @@
 
       body {
         --scale: 3;
+        --base-width: 640;
         background: black;
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
@@ -33,16 +34,16 @@
       }
 
       .screen {
-        --base-width: 640;
         width: calc(1px * var(--base-width) * var(--scale));
         image-rendering: pixelated;
+        aspect-ratio: 16/9;
       }
 
       footer {
+        max-width: calc(var(--scale) * var(--base-width) * 1px);
         font-family: monospace;
         font-size: 0.875rem;
         padding: 0.5rem;
-        line-height: calc(15px * var(--scale));
         color: #555;
       }
     </style>

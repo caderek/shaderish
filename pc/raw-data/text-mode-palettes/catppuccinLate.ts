@@ -1,8 +1,8 @@
 import { swap32 } from "../../util/colors.ts";
 
 export const catppuccinLate = new Uint32Array([
-  swap32(0xe6e9efff), // 0 0000 bg0 | high contrast
-  swap32(0xeff1f5ff), // 1 0001 bg1 | normal
+  swap32(0xeff1f5ff), // 0 0000 bg0 | high contrast
+  swap32(0xe6e9efff), // 1 0001 bg1 | normal
   swap32(0xccd0daff), // 2 0010 bg2 | mid contrast
   swap32(0xbcc0ccff), // 3 0011 bg3 | low contrast
   swap32(0x4c4f69ff), // 4 0100 fg0 | high contrast

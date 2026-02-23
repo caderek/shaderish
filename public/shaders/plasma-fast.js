@@ -1,4 +1,4 @@
-import { pack } from "http://localhost:5175/lib/fast-util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 // --- PRE-COMPUTATION (Run once) ---
 const TABLE_SIZE = 4096;

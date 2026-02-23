@@ -8,10 +8,13 @@ import { kanagawa } from "../../raw-data/text-mode-palettes/kanagawa.ts";
 import { narc } from "../../raw-data/text-mode-palettes/narc.ts";
 import { nightOwl } from "../../raw-data/text-mode-palettes/nightOwl.ts";
 import { nord } from "../../raw-data/text-mode-palettes/nord.ts";
+import { oneDark } from "../../raw-data/text-mode-palettes/oneDark.ts";
+import { oneLight } from "../../raw-data/text-mode-palettes/oneLight.ts";
 import { rosePine } from "../../raw-data/text-mode-palettes/rosePine.ts";
 import { solarizedDark } from "../../raw-data/text-mode-palettes/solarizedDark.ts";
 import { solarizedLight } from "../../raw-data/text-mode-palettes/solarizedLight.ts";
 import { sonokai } from "../../raw-data/text-mode-palettes/sonokai.ts";
+import { study } from "../../raw-data/text-mode-palettes/study.ts";
 import { tokyoNight } from "../../raw-data/text-mode-palettes/tokyoNight.ts";
 import { PALETTES_BYTE_LENGTH } from "../../romLayout.ts";
 
@@ -19,18 +22,21 @@ export const palettes = Uint32Array.from([
   ...basic,
   ...gruvbox,
   ...catppuccinMocha,
-  ...catppuccinLate,
   ...sonokai,
   ...rosePine,
   ...kanagawa,
   ...everforest,
   ...solarizedDark,
-  ...solarizedLight,
   ...nord,
   ...tokyoNight,
   ...nightOwl,
   ...ayu,
   ...narc,
+  ...oneDark,
+  ...study,
+  ...catppuccinLate,
+  ...solarizedLight,
+  ...oneLight,
 ]);
 
 export function generatePalettes() {

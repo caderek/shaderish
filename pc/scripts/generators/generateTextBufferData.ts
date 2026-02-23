@@ -101,7 +101,6 @@ class TerminalDriver {
   #altChars = false;
   #bgColor = 0x01;
   #fgColor = 0x05;
-  #tabSize = 2;
 
   processChar(char: string) {
     switch (this.#state) {

@@ -31,7 +31,7 @@ export class VideoController {
   #frameBufferView: Uint32Array;
   #font: Uint32Array;
   #palettes: Uint32Array;
-  #paletteId = 11;
+  #paletteId = 14;
 
   constructor(memory: WebAssembly.Memory) {
     this.#textBuffer = new Uint8Array(
@@ -53,7 +53,7 @@ export class VideoController {
     );
 
     // Fill the screen with the main background color
-    this.#frameBufferView.fill(this.#palettes[this.#paletteId * 16 + 0]);
+    // this.#frameBufferView.fill(this.#palettes[this.#paletteId * 16 + 0]);
 
     const memoryFontOffset = ROM_MAPPING_OFFSET + TEXTMODE_FONT_OFFSET;
 
