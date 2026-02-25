@@ -89,6 +89,12 @@
   TOTAL: 704 bytes (11 cache lines) per gamepad
 */
 
+import { argv0 } from "process";
+import {
+  GAMEPADS_MAPPING_BYTE_LENGTH,
+  GAMEPADS_MAPPING_OFFSET,
+} from "../ramLayout";
+
 const DEFAULT_STICK_INNER_DEAD_ZONE = 0.1;
 const DEFAULT_STICK_OUTER_DEAD_ZONE = 0.05;
 const DEFAULT_TRIGGER_INNER_DEAD_ZONE = 0.05;
@@ -123,6 +129,20 @@ const EFFECTS_STATUS_BYTE_SIZE = 1;
 const EFFECTS_OPCODE_BYTE_SIZE = 1;
 const EFFECTS_ARGUMENTS_BYTE_SIZE = 10;
 
+const GAMEPAD_STATE_BYTE_SIZE = 64;
+
+const GAMEPAD_STATE_PADDING_BYTE_SIZE =
+  GAMEPAD_STATE_BYTE_SIZE -
+  (DIGITAL_BUTTONS_BYTE_SIZE +
+    ANALOG_TRIGGERS_BYTE_SIZE +
+    ANALOG_STICKS_BYTE_SIZE +
+    DEAZONES_BYTE_SIZE +
+    EFFECTS_STATUS_BYTE_SIZE +
+    EFFECTS_OPCODE_BYTE_SIZE +
+    EFFECTS_ARGUMENTS_BYTE_SIZE);
+
+const GAMEPAD_QUEUE_BYTE_SIZE = 640;
+
 const DIGITAL_BUTTONS_OFFSET = 0;
 const ANALOG_TRIGGERS_OFFSET = DIGITAL_BUTTONS_BYTE_SIZE;
 const ANALOG_STICKS_OFFSET = ANALOG_TRIGGERS_OFFSET + ANALOG_TRIGGERS_BYTE_SIZE;
@@ -133,42 +153,48 @@ const EFFECTS_ARGUMENTS_OFFSET =
   EFFECTS_OPCODE_OFFSET + EFFECTS_OPCODE_BYTE_SIZE;
 
 const MAX_GAMEPADS = 4;
-const STATUS_REGISTERS_COUNT = 1;
-const AXES_COUNT = 4;
-const BUTTONS_COUNT = 17;
-const CONTROL_REGISTERS_COUNT = 10;
+const ANALOG_TRIGGERS_COUNT = 2;
+const ANALOG_STICKS_COUNT = 2;
+const STICK_STRIDE = 4;
 
-const AXES_OFFSET = STATUS_REGISTERS_COUNT;
-const BUTTONS_OFFSET = AXES_OFFSET + AXES_COUNT;
+const BYTE_SIZE_PER_GAMEPAD = GAMEPAD_STATE_BYTE_SIZE + GAMEPAD_QUEUE_BYTE_SIZE;
 
-const SIZE_PER_GAMEPAD =
-  STATUS_REGISTERS_COUNT + AXES_COUNT + BUTTONS_COUNT + CONTROL_REGISTERS_COUNT;
+const POOLING_RATE_MS = 4;
 
-// @todo reset all memory for gamepad on disconnect!
+console.log({ BYTE_SIZE_PER_GAMEPAD });
 
 export class GamepadController {
+  #mmio: DataView;
+  #lastUpdate = new Map([
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+  ]);
+
   constructor(memory: WebAssembly.Memory) {
     this.#registerHandlers();
-    this.watch = this.watch.bind(this);
 
+    this.#mmio = new DataView(
+      memory.buffer,
+      GAMEPADS_MAPPING_OFFSET,
+      GAMEPADS_MAPPING_BYTE_LENGTH,
+    );
+
+    this.watch = this.watch.bind(this);
     this.watch();
   }
 
   #registerHandlers() {
+    // @todo autocalibration of dead zones on connect
     window.addEventListener("gamepadconnected", (e) => {
       console.log("gamepad connnected!");
       console.log(e.gamepad);
 
-      this.#vibrate(e.gamepad, 1000, {
-        weakMagnitude: 0,
-        strongMagnitude: 1,
-      });
-      this.#vibrate(e.gamepad, 1000, {
-        weakMagnitude: 1,
-        strongMagnitude: 0,
-      });
+      this.#vibrate(e.gamepad, 200);
     });
 
+    // @todo reset all memory for gamepad on disconnect!
     window.addEventListener("gamepaddisconnected", (e) => {
       console.log("gamepad disconnnected!");
       console.log(e.gamepad);
@@ -177,76 +203,108 @@ export class GamepadController {
 
   watch() {
     this.getData();
-    setTimeout(this.watch, 0);
+    setTimeout(this.watch, POOLING_RATE_MS);
   }
 
   getData() {
-    // 32 2-byte registers, 1 status register, 21 input registers, 10 control registers
-    // what about input queue for buttons pressed between frames? could they fit in control registers?
-    // or maybe condense the input registers for binary buttons?
-    // autocalibration of dead zones on connect
-
     const gamepads = navigator.getGamepads();
 
     for (let i = 0; i < MAX_GAMEPADS; i++) {
       const gamepad = gamepads[i];
-      const offset = i * SIZE_PER_GAMEPAD;
+      const offset = i * BYTE_SIZE_PER_GAMEPAD;
 
-      if (!gamepad || gamepad.timestamp === lastUpdate.get(gamepad.index)) {
+      if (
+        !gamepad ||
+        gamepad.timestamp === this.#lastUpdate.get(gamepad.index)
+      ) {
         continue;
       }
 
-      for (let axis = 0; axis < AXES_COUNT; axis += 2) {
-        const valPositionX = offset + AXES_OFFSET + axis;
-        const valPositionY = valPositionX + 1;
-        const oldValueX = gamepadsRegisters[valPositionX];
-        const oldValueY = gamepadsRegisters[valPositionY];
-        let newValueX = gamepad.axes[axis];
-        let newValueY = gamepad.axes[axis + 1];
-        const radius = Math.hypot(newValueX, newValueY);
-        const normalizedRadius = applyDeadzone(0.1, 0.95, radius);
+      const digitalButtonsPos = offset + DIGITAL_BUTTONS_OFFSET;
+      let btnVals = this.#mmio.getUint16(digitalButtonsPos, true);
 
-        if (radius > 0) {
-          const scale = normalizedRadius / radius;
-          newValueX *= scale;
-          newValueY *= scale;
-        }
+      for (let btn = 0; btn < 6; btn++) {
+        const btnNewVal = gamepad.buttons[btn].value;
+        const mask = DIGITAL_BUTTONS_MASKS[btn];
+        const btnOldVal = +!!(btnVals & mask);
 
-        newValueX = round(newValueX, 3);
-        newValueY = round(newValueY, 3);
-
-        if (oldValueX !== newValueX) {
-          console.log(`Axis ${axis} change:`, oldValueX, "to", newValueX);
-          gamepadsRegisters[valPositionX] = newValueX;
-        }
-
-        if (oldValueY !== newValueY) {
-          console.log(`Axis ${axis + 1} change:`, oldValueY, "to", newValueY);
-          gamepadsRegisters[valPositionY] = newValueY;
+        if (btnOldVal !== btnNewVal) {
+          this.#addToQueue(btn, btnNewVal, gamepad.timestamp);
+          btnVals ^= mask;
         }
       }
 
-      for (let btn = 0; btn < BUTTONS_COUNT; btn++) {
-        const oldValPos = offset + BUTTONS_OFFSET + btn;
-        const oldVal = gamepadsRegisters[oldValPos];
-        const newVal = gamepad.buttons[btn].value;
+      for (let btn = 8; btn < 17; btn++) {
+        const btnNewVal = gamepad.buttons[btn].value;
+        const mask = DIGITAL_BUTTONS_MASKS[btn];
+        const btnOldVal = +!!(btnVals & mask);
+
+        if (btnOldVal !== btnNewVal) {
+          this.#addToQueue(btn - 2, btnNewVal, gamepad.timestamp);
+          btnVals ^= mask;
+        }
+      }
+
+      this.#mmio.setUint16(digitalButtonsPos, btnVals, true);
+
+      for (let trigger = 0; trigger < ANALOG_TRIGGERS_COUNT; trigger++) {
+        const pos = offset + ANALOG_TRIGGERS_OFFSET + trigger;
+        const oldVal = this.#mmio.getUint8(pos);
+        let newVal = gamepad.buttons[6 + trigger].value;
+        newVal = applyDeadzone(0.05, 0.95, newVal);
+        newVal = triggerToUint8(newVal);
 
         if (oldVal !== newVal) {
-          // push the change to queue
-          console.log(
-            `Button ${btn} change:`,
-            oldVal,
-            "to",
-            newVal,
-            "at",
-            Math.floor(gamepad.timestamp),
-          );
-          gamepadsRegisters[oldValPos] = newVal;
+          this.#addToQueue(trigger + 15, newVal, gamepad.timestamp);
+          this.#mmio.setUint8(pos, newVal);
         }
       }
 
-      lastUpdate.set(gamepad.index, gamepad.timestamp);
+      for (let stick = 0; stick < ANALOG_STICKS_COUNT; stick++) {
+        const axisX = stick * 2;
+        const axisY = stick * 2 + 1;
+        const posX = offset + ANALOG_STICKS_OFFSET + stick * STICK_STRIDE;
+        const posY = posX + 2;
+        const oldX = this.#mmio.getInt16(posX, true);
+        const oldY = this.#mmio.getInt16(posY, true);
+
+        let newX = gamepad.axes[axisX];
+        let newY = gamepad.axes[axisY];
+        const radius = Math.hypot(newX, newY);
+        const normalizedRadius = applyDeadzone(0.1, 0.95, radius);
+
+        if (normalizedRadius > 0) {
+          const scale = normalizedRadius / radius;
+          newX *= scale;
+          newY *= scale;
+        } else {
+          newX = 0;
+          newY = 0;
+        }
+
+        newX = axisToInt16(newX);
+        newY = axisToInt16(newY);
+
+        if (oldX !== newX) {
+          this.#addToQueue(axisX + 17, newX, gamepad.timestamp);
+          this.#mmio.setInt16(posX, newX, true);
+        }
+
+        if (oldY !== newY) {
+          this.#addToQueue(axisY + 17, newY, gamepad.timestamp);
+          this.#mmio.setInt16(posY, newY, true);
+        }
+      }
+
+      this.#lastUpdate.set(gamepad.index, gamepad.timestamp);
     }
+  }
+
+  #addToQueue(inputId: number, value: number, timestamp: number) {
+    timestamp = Math.floor(timestamp);
+    console.log(
+      `Input ${inputId} changed to ${value} (${value !== 0 ? "ON" : "OFF"}) at ${timestamp}`,
+    );
   }
 
   #vibrate(gamepad: Gamepad, duration: number, options = {}) {
@@ -264,13 +322,6 @@ export class GamepadController {
   }
 }
 
-const lastUpdate = new Map([
-  [0, 0],
-  [1, 0],
-  [2, 0],
-  [3, 0],
-]);
-
 function applyDeadzone(lower: number, upper: number, val: number) {
   if (val <= lower) {
     return 0;
@@ -283,6 +334,13 @@ function applyDeadzone(lower: number, upper: number, val: number) {
   return (val - lower) / (upper - lower);
 }
 
-function round(val: number, decimals: number) {
-  return Math.round(val * 10 ** decimals) / 10 ** decimals;
+const INT_16_MAX_VALUE = 2 ** 16 / 2 - 1;
+const UINT_8_MAX_VALUE = 2 ** 8 - 1;
+
+function axisToInt16(val: number) {
+  return Math.floor(val * INT_16_MAX_VALUE);
+}
+
+function triggerToUint8(val: number) {
+  return Math.floor(val * UINT_8_MAX_VALUE);
 }

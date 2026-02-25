@@ -31,7 +31,7 @@ export class VideoController {
   #frameBufferView: Uint32Array;
   #font: Uint32Array;
   #palettes: Uint32Array;
-  #paletteId = 14;
+  #paletteId = 9;
 
   constructor(memory: WebAssembly.Memory) {
     this.#textBuffer = new Uint8Array(

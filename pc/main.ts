@@ -75,7 +75,7 @@ async function main() {
   function loop(t: number) {
     stats.start(t);
 
-    gamepads.getData();
+    // gamepads.getData();
     videoController.draw();
     screen.refresh();
 
