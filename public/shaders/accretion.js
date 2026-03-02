@@ -1,4 +1,4 @@
-import { color } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Accretion" (JS Port)
@@ -11,8 +11,11 @@ import { color } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  x = x * (w / h);
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // Raymarch depth, Step distance, Iterator
   let z = 0;
@@ -87,7 +90,7 @@ export function fragment(x, y, t, w, h) {
   // 6. Final Tanh Tonemap (O * O / 400)
   const exposure = 400.0;
 
-  return color(
+  return pack(
     Math.tanh((or * or) / exposure),
     Math.tanh((og * og) / exposure),
     Math.tanh((ob * ob) / exposure),

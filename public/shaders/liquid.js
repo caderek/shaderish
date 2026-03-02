@@ -1,4 +1,4 @@
-import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Liquid Warp" (JS Port)
@@ -11,15 +11,14 @@ import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  // 1. Coordinate Setup
-  // Correct aspect ratio
-  const aspect = w / h;
-  const uvX = x * 0.5 + 0.5; // 0 to 1 space for vignette
-  const uvY = y * 0.5 + 0.5;
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // Scale coordinates for the noise pattern (similar to fragCoord * .004)
-  let px = x * aspect * 2.5;
+  let px = x * 2.5;
   let py = y * 2.5;
 
   const time = t * 0.2; // Slow down time slightly
@@ -93,21 +92,12 @@ export function fragment(x, y, t, w, h) {
   b *= outline;
 
   // Contrast
-  r *= nVal * 2.0;
-  g *= nVal * 2.0;
-  b *= nVal * 2.0;
-
-  // Vignette
-  // 0.70 + 0.65 * sqrt(70.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y));
-  const vigVal = 70.0 * uvX * uvY * (1.0 - uvX) * (1.0 - uvY);
-  const vig = 0.7 + 0.65 * Math.sqrt(Math.max(0, vigVal));
-
-  r *= vig;
-  g *= vig;
-  b *= vig;
+  r *= nVal * 4.0;
+  g *= nVal * 4.0;
+  b *= nVal * 4.0;
 
   // 4. Output
-  return color(r, g, b, 1.0);
+  return pack(r, g, b, 1.0);
 }
 
 // --- Math Helpers ---

@@ -1,4 +1,4 @@
-import { color, normalize } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Rainbow Showoff" (JS Port)
@@ -74,5 +74,5 @@ export function fragment(pos, res, t) {
     -Math.pow(Math.abs(uvY - 0.5), 6.0) / Math.pow(2.0 * 0.05, 2.0),
   );
 
-  return color(r * fade, g * fade, b * fade, 1.0);
+  return pack(r * fade, g * fade, b * fade, 1.0);
 }

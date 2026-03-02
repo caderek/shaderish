@@ -30,9 +30,9 @@ export function fragment(pos, res, t) {
   const fuzz = 0.01;
   const val = step(0.5, line);
   // const val = smoothstep(0.5 - fuzz, 0.5 + fuzz, line);
-  color[0] = 0;
+  color[0] = 0.2;
   color[1] = val;
-  color[2] = 0.2;
+  color[2] = 0.4;
 
   return arena.flush(color);
 }

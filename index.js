@@ -31,7 +31,10 @@ const state = {
   play: true,
 };
 const MAX_WORKERS = 8; //Infinity;
-const MULTIPLE = Math.floor(window.innerWidth / w);
+const MULTIPLE = Math.min(
+  Math.floor(window.innerWidth / w),
+  Math.floor(window.innerHeight / h),
+);
 const MIN_SIZE = w * MULTIPLE;
 const scale = MIN_SIZE / w;
 

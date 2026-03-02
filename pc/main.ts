@@ -45,7 +45,7 @@ async function main() {
     palettes: rom.palettes,
   });
 
-  const width = 360 * 1;
+  const width = 640 * 1;
   const height = 360 * 1;
 
   const videoController = new VideoController(systemMemory);

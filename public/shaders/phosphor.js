@@ -1,4 +1,4 @@
-import { color } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Phosphor 3" (JS Port)
@@ -11,9 +11,11 @@ import { color } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  // Correct aspect ratio for x
-  x = Math.fround(x * (w / h));
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // Raymarching State
   let z = 0.0; // Ray depth
@@ -115,7 +117,7 @@ export function fragment(x, y, t, w, h) {
   // --- 3. Final Tonemap ---
   // O = tanh(O/5e3)
   // 5e3 = 5000
-  return color(
+  return pack(
     Math.tanh(r / 5000.0),
     Math.tanh(g / 5000.0),
     Math.tanh(b / 5000.0),

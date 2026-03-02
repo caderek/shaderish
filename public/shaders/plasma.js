@@ -1,4 +1,4 @@
-import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Plasma" (JS Port)
@@ -11,11 +11,11 @@ import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(pos, t, w, h) {
-  let x = pos[0];
-  let y = pos[1];
-  x = (2 * x - w) / h;
-  y = -(2 * y - h) / h;
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // x = Math.fround(x * (w / h));
   // 1. Z-Depth / Vignette
