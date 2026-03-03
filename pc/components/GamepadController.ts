@@ -19,8 +19,8 @@
     0b00000000000000000000000000001000 - Button 3    (Y / triangle)                     
     0b00000000000000000000000000010000 - Button 4    (LB / L1)                          
     0b00000000000000000000000000100000 - Button 5    (RB / R1)                          
-    0b00000000000000000000000001000000 - Button 6    (LT / L2)
-    0b00000000000000000000000010000000 - Button 7    (RT / R2)
+    0b00000000000000000000000001000000 - Button 6    (LT / L2)                          
+    0b00000000000000000000000010000000 - Button 7    (RT / R2)                          
     0b00000000000000000000000100000000 - Button 8    (Share / View)                     
     0b00000000000000000000001000000000 - Button 9    (Options / Menu)                   
     0b00000000000000000000010000000000 - Button 10   (LSB / L3)                         
@@ -30,21 +30,21 @@
     0b00000000000000000100000000000000 - Button 14   (D-Pad Left)                       
     0b00000000000000001000000000000000 - Button 15   (D-Pad Right)                      
     0b00000000000000010000000000000000 - Button 16   (Start / Xbox button / PS button)  
-    0b00000000000000100000000000000000 - Button 17   (reserved)
-    0b00000000000001000000000000000000 - Button 18   (reserved)
-    0b00000000000010000000000000000000 - Button 19   (reserved)
-    0b00000000000100000000000000000000 - Button 20   (reserved)
-    0b00000000001000000000000000000000 - Button 21   (reserved)
-    0b00000000010000000000000000000000 - Button 22   (reserved)
-    0b00000000100000000000000000000000 - Button 23   (Left Stick Up)    
-    0b00000001000000000000000000000000 - Button 24   (Left Stick Down)  
-    0b00000010000000000000000000000000 - Button 25   (Left Stick Left)  
-    0b00000100000000000000000000000000 - Button 26   (Left Stick Right) 
-    0b00001000000000000000000000000000 - Button 27   (Right Stick Up)   
-    0b00010000000000000000000000000000 - Button 28   (Right Stick Down) 
-    0b00100000000000000000000000000000 - Button 29   (Right Stick Left) 
-    0b01000000000000000000000000000000 - Button 30   (Right Stick Right)
-    0b10000000000000000000000000000000 - on/off      (on if the gamepad is connected)    
+    0b00000000000000100000000000000000 - Button 17   (reserved)                         
+    0b00000000000001000000000000000000 - Button 18   (reserved)                         
+    0b00000000000010000000000000000000 - Button 19   (Up)                               
+    0b00000000000100000000000000000000 - Button 20   (Down)                             
+    0b00000000001000000000000000000000 - Button 21   (Left)                             
+    0b00000000010000000000000000000000 - Button 22   (Right)                            
+    0b00000000100000000000000000000000 - Button 23   (Left Stick Up)                    
+    0b00000001000000000000000000000000 - Button 24   (Left Stick Down)                  
+    0b00000010000000000000000000000000 - Button 25   (Left Stick Left)                  
+    0b00000100000000000000000000000000 - Button 26   (Left Stick Right)                 
+    0b00001000000000000000000000000000 - Button 27   (Right Stick Up)                   
+    0b00010000000000000000000000000000 - Button 28   (Right Stick Down)                 
+    0b00100000000000000000000000000000 - Button 29   (Right Stick Left)                 
+    0b01000000000000000000000000000000 - Button 30   (Right Stick Right)                
+    0b10000000000000000000000000000000 - on/off      (on if the gamepad is connected)   
 
   analog sticks 8 bytes
 
@@ -186,13 +186,13 @@ const DIGITAL_BUTTONS_MASKS = [
   0b00000000000000000010000000000000, // Button 13   (D-Pad Down)
   0b00000000000000000100000000000000, // Button 14   (D-Pad Left)
   0b00000000000000001000000000000000, // Button 15   (D-Pad Right)
-  0b00000000000000010000000000000000, // Button 16   (Start / Xbox button / PS button)
+  0b00000000000000010000000000000000, // Button 16   (reserved - Start / Xbox button / PS button)
   0b00000000000000100000000000000000, // Button 17   (reserved)
   0b00000000000001000000000000000000, // Button 18   (reserved)
-  0b00000000000010000000000000000000, // Button 19   (Left Stick Vertical)
-  0b00000000000100000000000000000000, // Button 20   (Left Stick Horizontal)
-  0b00000000001000000000000000000000, // Button 21   (Right Stick Vertical)
-  0b00000000010000000000000000000000, // Button 22   (Right Stick Horizontal)
+  0b00000000000010000000000000000000, // Button 19   (Up)
+  0b00000000000100000000000000000000, // Button 20   (Down)
+  0b00000000001000000000000000000000, // Button 21   (Left)
+  0b00000000010000000000000000000000, // Button 22   (Right)
   0b00000000100000000000000000000000, // Button 23   (Left Stick Up)
   0b00000001000000000000000000000000, // Button 24   (Left Stick Down)
   0b00000010000000000000000000000000, // Button 25   (Left Stick Left)
@@ -370,8 +370,9 @@ export class GamepadController {
 
       const digitalButtonsPos = offset + DIGITAL_BUTTONS_OFFSET;
       let btnVals = this.#mmio.getUint32(digitalButtonsPos, true);
+      const oldBtnVals = btnVals;
 
-      for (let btn = 0; btn <= 16; btn++) {
+      for (let btn = 0; btn < 16; btn++) {
         const mask = DIGITAL_BUTTONS_MASKS[btn];
         const btnOldVal = +!!(btnVals & mask);
 
@@ -385,10 +386,17 @@ export class GamepadController {
             continue;
           }
 
-          this.#addToAnalogQueue(gamepadIdx, btn, btnNewVal, gamepad.timestamp);
           this.#mmio.setUint8(pos, btnNewVal);
 
-          // @todo handle it as digital, with thresholds and digital queue
+          const releaseThreshold = 0; // @todo use real value
+          const pressThreshold = 0.1; // @todo use real value
+
+          if (
+            (btnNewVal >= pressThreshold && btnOldVal === 0) ||
+            (btnNewVal <= releaseThreshold && btnOldVal === 1)
+          ) {
+            btnVals ^= mask;
+          }
         } else {
           let btnNewVal = gamepad.buttons[btn].value;
 
@@ -396,7 +404,7 @@ export class GamepadController {
             continue;
           }
 
-          this.#addToDigitalQueue(
+          this.#addToButtonsQueue(
             gamepadIdx,
             btn,
             btnNewVal,
@@ -408,10 +416,10 @@ export class GamepadController {
 
       this.#mmio.setUint32(digitalButtonsPos, btnVals, true);
 
-      // 0b00000000000010000000000000000000, // Button 19   (Left Stick Vertical)
-      // 0b00000000000100000000000000000000, // Button 20   (Left Stick Horizontal)
-      // 0b00000000001000000000000000000000, // Button 21   (Right Stick Vertical)
-      // 0b00000000010000000000000000000000, // Button 22   (Right Stick Horizontal)
+      // 0b00000000000010000000000000000000, // Button 19   (Up)
+      // 0b00000000000100000000000000000000, // Button 20   (Down)
+      // 0b00000000001000000000000000000000, // Button 21   (Left)
+      // 0b00000000010000000000000000000000, // Button 22   (Right)
       // 0b00000000100000000000000000000000, // Button 23   (Left Stick Up)
       // 0b00000001000000000000000000000000, // Button 24   (Left Stick Down)
       // 0b00000010000000000000000000000000, // Button 25   (Left Stick Left)
@@ -447,14 +455,18 @@ export class GamepadController {
         newY = axisToInt16(newY);
 
         if (oldX !== newX) {
-          this.#addToQueues(gamepadIdx, axisX + 17, newX, gamepad.timestamp);
+          this.#addToAxesQueue(gamepadIdx, axisX, newX, gamepad.timestamp);
           this.#mmio.setInt16(posX, newX, true);
         }
 
         if (oldY !== newY) {
-          this.#addToQueues(gamepadIdx, axisY + 17, newY, gamepad.timestamp);
+          this.#addToAxesQueue(gamepadIdx, axisY, newY, gamepad.timestamp);
           this.#mmio.setInt16(posY, newY, true);
         }
+      }
+
+      if (btnVals !== oldBtnVals) {
+        console.log((btnVals >>> 0).toString(2).padStart(32, "0"));
       }
 
       this.#lastUpdate.set(gamepad.index, gamepad.timestamp);
@@ -467,94 +479,71 @@ export class GamepadController {
   // the inputId should be consistent and continuous between the queues,
   // basically each button/trigger/stick axis has it's own id/index
   // make the hair trigger configurable as the deadzones?
-  #addToQueues(
+
+  #addToButtonsQueue(
     gamepadIndex: number,
-    inputId: number,
+    buttonId: number,
     value: number,
     timestamp: number,
   ) {
     timestamp = Math.floor(timestamp);
-    console.log(inputId);
-
-    if (inputId <= 14) {
-      this.#addToDigitalQueue(gamepadIndex, inputId, value, timestamp);
-    } else if (inputId <= 16) {
-      this.#addToAnalogQueue(gamepadIndex, inputId, value, timestamp);
-
-      // add to digital queue is changed
-      const actuationPoint = 0.1;
-      const releasePoint = 0;
-    } else {
-      this.#addToAnalogQueue(gamepadIndex, inputId, value, timestamp);
-    }
-  }
-
-  #addToDigitalQueue(
-    gamepadIndex: number,
-    inputId: number,
-    value: number,
-    timestamp: number,
-  ) {
-    timestamp = Math.floor(timestamp);
-    console.log("Adding to digital queue");
-    console.log({ gamepadIndex, inputId, value, timestamp });
+    console.log({ gamepadIndex, buttonId, value, timestamp });
     return;
 
-    const offset = gamepadIndex * BYTE_SIZE_PER_GAMEPAD + GAMEPAD_QUEUE_OFFSET;
-    const head = this.#mmio.getUint32(offset, true);
-    const tail = this.#mmio.getUint32(
-      offset + GAMEPAD_QUEUE_HEAD_PADDED_BYTE_SIZE,
-      true,
-    );
-
-    const newHead = (head + 1) & GAMEPAD_QUEUE_WRAP_MASK;
-
-    // Don't add events if queue is full
-    if (newHead == tail) {
-      return;
-    }
-
-    const itemOffset =
-      offset +
-      GAMEPAD_QUEUE_HEADER_BYTE_SIZE +
-      newHead * GAMEPAD_QUEUE_ITEM_BYTE_SIZE;
-
-    this.#mmio.setUint8(itemOffset, inputId);
-    this.#mmio.setUint8(
-      itemOffset + GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE,
-      +!!value,
-    );
-    this.#mmio.setInt16(
-      itemOffset +
-        GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE +
-        GAMEPAD_QUEUE_INPUT_STATUS_BYTE_SIZE,
-      value,
-      true,
-    );
-    this.#mmio.setInt32(
-      itemOffset +
-        GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE +
-        GAMEPAD_QUEUE_INPUT_STATUS_BYTE_SIZE +
-        GAMEPAD_QUEUE_INPUT_FULL_VALUE_BYTE_SIZE,
-      timestamp,
-      true,
-    );
-    this.#mmio.setUint32(offset, newHead, true);
-
-    console.log(
-      `Gamepad ${gamepadIndex}, input ${inputId} changed to ${value} (${value !== 0 ? "ON" : "OFF"}) at ${timestamp}`,
-    );
+    // const offset = gamepadIndex * BYTE_SIZE_PER_GAMEPAD + GAMEPAD_QUEUE_OFFSET;
+    // const head = this.#mmio.getUint32(offset, true);
+    // const tail = this.#mmio.getUint32(
+    //   offset + GAMEPAD_QUEUE_HEAD_PADDED_BYTE_SIZE,
+    //   true,
+    // );
+    //
+    // const newHead = (head + 1) & GAMEPAD_QUEUE_WRAP_MASK;
+    //
+    // // Don't add events if queue is full
+    // if (newHead == tail) {
+    //   return;
+    // }
+    //
+    // const itemOffset =
+    //   offset +
+    //   GAMEPAD_QUEUE_HEADER_BYTE_SIZE +
+    //   newHead * GAMEPAD_QUEUE_ITEM_BYTE_SIZE;
+    //
+    // this.#mmio.setUint8(itemOffset, inputId);
+    // this.#mmio.setUint8(
+    //   itemOffset + GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE,
+    //   +!!value,
+    // );
+    // this.#mmio.setInt16(
+    //   itemOffset +
+    //     GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE +
+    //     GAMEPAD_QUEUE_INPUT_STATUS_BYTE_SIZE,
+    //   value,
+    //   true,
+    // );
+    // this.#mmio.setInt32(
+    //   itemOffset +
+    //     GAMEPAD_QUEUE_INPUT_ID_BYTE_SIZE +
+    //     GAMEPAD_QUEUE_INPUT_STATUS_BYTE_SIZE +
+    //     GAMEPAD_QUEUE_INPUT_FULL_VALUE_BYTE_SIZE,
+    //   timestamp,
+    //   true,
+    // );
+    // this.#mmio.setUint32(offset, newHead, true);
+    //
+    // console.log(
+    //   `Gamepad ${gamepadIndex}, input ${inputId} changed to ${value} (${value !== 0 ? "ON" : "OFF"}) at ${timestamp}`,
+    // );
   }
 
-  #addToAnalogQueue(
+  #addToAxesQueue(
     gamepadIndex: number,
-    inputId: number,
+    axisId: number,
     value: number,
     timestamp: number,
   ) {
     timestamp = Math.floor(timestamp);
-    console.log("Adding to analog queue");
-    console.log({ gamepadIndex, inputId, value, timestamp });
+    console.log({ gamepadIndex, axisId, value, timestamp });
     return;
   }
 

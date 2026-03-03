@@ -14,7 +14,8 @@
       }
 
       html,
-      body {
+      body,
+      main {
         height: 100%;
       }
 
@@ -24,9 +25,12 @@
         background: black;
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
-        display: grid;
-        place-content: start center;
         font-size: 0;
+      }
+
+      main {
+        display: grid;
+        place-content: center;
       }
 
       *::-webkit-scrollbar {
@@ -40,7 +44,6 @@
       }
 
       footer {
-        max-width: calc(var(--scale) * var(--base-width) * 1px);
         font-family: monospace;
         font-size: 0.875rem;
         padding: 0.5rem;
