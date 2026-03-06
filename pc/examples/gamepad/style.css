@@ -1,0 +1,15 @@
+html,
+body,
+main {
+  height: 100%;
+}
+
+body {
+  /* background: #070711; */
+  /* color: #55ff55; */
+}
+
+main {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}

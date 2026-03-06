@@ -1,13 +1,8 @@
 /* Gamepad memory layout:
 
-  --read-only--section-- 64 bytes
+  --state--section-- 64 bytes
 
-  Uint16 - last change timestamp
-
-  analog triggers 2 bytes
-
-    Uint8              - Button 15 (LT/ L2)
-    Uint8              - Button 16 (RT/ R2)
+  Uint32 - last change timestamp
 
   digital input 4 bytes (32 flags,  1 bit on/off, 31 bits of buttons)
 
@@ -53,9 +48,14 @@
     Int16              - Axis 2 (19) (Right stick X axis)  left negative
     Int16              - Axis 3 (20) (Right stick Y axis)  up negative
 
-  effects status flags 1 byte
+  analog triggers 2 bytes
 
-    Uint8 - status flags:
+    Uint8              - Button 15 (LT/ L2)
+    Uint8              - Button 16 (RT/ R2)
+
+  effect status flags 4 bytes
+
+    Uint8 - general effects status flags:
       0b00000001 - prev effect stil running
       0b00000010 - incorrect effect opcode
       0b00000100 - incorrect effect arguments
@@ -63,11 +63,33 @@
       0b00010000 - reserved
       0b00100000 - reserved
       0b01000000 - reserved
-      0b10000000 - haptics disabled
+      0b10000000 - haptics disabled / unavailable
 
-  47 bytes of read-only reserved space / padding
+    Uint8 - triggers effects status flags:
+      0b00000001 - prev effect stil running
+      0b00000010 - incorrect effect opcode
+      0b00000100 - incorrect effect arguments
+      0b00001000 - reserved
+      0b00010000 - reserved
+      0b00100000 - reserved
+      0b01000000 - reserved
+      0b10000000 - haptics disabled / unavailable
 
-  --read-write--section-- 64 bytes
+    Uint8 - lights effects status flags:
+      0b00000001 - prev effect stil running
+      0b00000010 - incorrect effect opcode
+      0b00000100 - incorrect effect arguments
+      0b00001000 - reserved
+      0b00010000 - reserved
+      0b00100000 - reserved
+      0b01000000 - reserved
+      0b10000000 - lights disabled / unavailable
+
+    Uint8 - reserved effects status
+
+  42 bytes of reserved space / padding
+
+  --settings--section-- 64 bytes
 
   deadzones 8 bytes
 
@@ -80,39 +102,57 @@
     Uint8 - right trigger inner dead zone   (percentage as x/255)
     Uint8 - right trigger outer dead zone   (percentage as x/255)
 
-  digital trigger actuation 8 bytes
+  Analog to digital actuation 8 bytes
 
+    Uint8              - Left stick acutation point
+    Uint8              - Left stick release point
+    Uint8              - Right stick acutation point
+    Uint8              - Right stick release point
     Uint8              - Button 6 (LT/ L2) acutation point
     Uint8              - Button 6 (LT/ L2) release point
     Uint8              - Button 7 (RT/ R2) actuation point
     Uint8              - Button 7 (RT/ R2) release point
 
-    4 bytes padding / reserved space for maybe sticks actuation?
+  48 bytes of reserved space / padding
 
+  --effect-commands--section-- 64 bytes
 
-  effects registers - 32 bytes
-    Uint32  - opcode (0 - cancel current, 1 - dual-rumble, 2 - trigger-rumble) - more effects can be available in the furture
-    7 x 4-byte arguments registers
+  Effects regfisters - 64 bytes
+  (important: opcodes are doorbells, and should be written last after the arguments)
+  (important: opcodes should be written and read via atomics, arguments can be set using normal storeage operaions)
+
+    Uint16 - general vibration effect opcode (0 - noop, 1 - dual-rumble, 2+ other effects)
+    7 x 2-byte arugments registers
 
       for dual-rumble:
-
       Uint16 - effect arg0 - ex. duration in ms (max 5000)
       Uint16 - effect arg1 - delay in ms (max 4000)
-      Uint8  - effect arg2 - strong magnitude (intensity of the low-frequency motor)
-      Uint8  - effect arg3 - weak magnitude (intensity of the high-frequency motor)
+      Uint16  - effect arg2 - strong magnitude (intensity of the low-frequency motor)
+      Uint16  - effect arg3 - weak magnitude (intensity of the high-frequency motor)
 
-      for trigger-rumble
+    Uint16 - triggers effect opcode (0 - noop, 1 - trigger-rumble, 2+ other effects)
+    7 x 2-byte arugments registers
 
+      for trigger-rumble:
       Uint16 - effect arg0 - ex. duration in ms (max 5000)
       Uint16 - effect arg1 - delay in ms (max 4000)
-      Uint8  - effect arg2 - left trigger (rumble intensity of the bottom-left trigger)
-      Uint8  - effect arg3 - right trigger (rumble intensity of the bottom-right trigger)
+      Uint16  - effect arg2 - left trigger (rumble intensity of the bottom-left trigger)
+      Uint16  - effect arg3 - right trigger (rumble intensity of the bottom-right trigger)
 
-  16 bytes padding to align the queue to the cache line (reserved for addtional arugments)
+    Uint16 - lights effect opcode (0 - noop, 1 - set-solid-color, 2+ other effects)
+    7 x 2-byte arugments registers
+
+      for set-solid-color (hypothetical):
+      Uint16 - red channel
+      Uint16 - green channel
+      Uint16  - blue channel
+      2 bytes not used
+
+    16 bytes reserved for future use (yet another gamepad effects type)
 
   =================================================================
 
-  Digital input queue (ring buffer) - 384 bytes:
+  Buttons queue (ring buffer) - 384 bytes:
 
     Uint32 - head position
     60 bytes of padding
@@ -130,7 +170,7 @@
 
       TOTAL per event: 8 bytes
 
-  Analog input queue (ring buffer) - 384 bytes:
+  Axes queue (ring buffer) - 384 bytes:
 
     Uint32 - head position
     60 bytes of padding
@@ -182,10 +222,10 @@ const DIGITAL_BUTTONS_MASKS = [
   0b00000000000000000000001000000000, // Button 9    (Options / Menu)
   0b00000000000000000000010000000000, // Button 10   (LSB / L3)
   0b00000000000000000000100000000000, // Button 11   (RSB / R3)
-  0b00000000000000000001000000000000, // Button 12   (D-Pad Up)
-  0b00000000000000000010000000000000, // Button 13   (D-Pad Down)
-  0b00000000000000000100000000000000, // Button 14   (D-Pad Left)
-  0b00000000000000001000000000000000, // Button 15   (D-Pad Right)
+  0b00000000000010000001000000000000, // Button 12   (D-Pad Up)
+  0b00000000000100000010000000000000, // Button 13   (D-Pad Down)
+  0b00000000001000000100000000000000, // Button 14   (D-Pad Left)
+  0b00000000010000001000000000000000, // Button 15   (D-Pad Right)
   0b00000000000000010000000000000000, // Button 16   (reserved - Start / Xbox button / PS button)
   0b00000000000000100000000000000000, // Button 17   (reserved)
   0b00000000000001000000000000000000, // Button 18   (reserved)
@@ -193,10 +233,10 @@ const DIGITAL_BUTTONS_MASKS = [
   0b00000000000100000000000000000000, // Button 20   (Down)
   0b00000000001000000000000000000000, // Button 21   (Left)
   0b00000000010000000000000000000000, // Button 22   (Right)
-  0b00000000100000000000000000000000, // Button 23   (Left Stick Up)
-  0b00000001000000000000000000000000, // Button 24   (Left Stick Down)
-  0b00000010000000000000000000000000, // Button 25   (Left Stick Left)
-  0b00000100000000000000000000000000, // Button 26   (Left Stick Right)
+  0b00000000100010000000000000000000, // Button 23   (Left Stick Up)
+  0b00000001000100000000000000000000, // Button 24   (Left Stick Down)
+  0b00000010001000000000000000000000, // Button 25   (Left Stick Left)
+  0b00000100010000000000000000000000, // Button 26   (Left Stick Right)
   0b00001000000000000000000000000000, // Button 27   (Right Stick Up)
   0b00010000000000000000000000000000, // Button 28   (Right Stick Down)
   0b00100000000000000000000000000000, // Button 29   (Right Stick Left)
@@ -204,21 +244,27 @@ const DIGITAL_BUTTONS_MASKS = [
   0b10000000000000000000000000000000, // on/off      (on if the gamepad is connected)
 ];
 
-const PRODUCER_WRITE_SECTION_BYTE_SIZE = 64;
-const LAST_UPDATE_BYTE_SIZE = 2;
-const ANALOG_TRIGGERS_BYTE_SIZE = 2;
+const STATE_SECTION_BYTE_SIZE = 64;
+const LAST_UPDATE_BYTE_SIZE = 4;
 const DIGITAL_BUTTONS_BYTE_SIZE = 4;
 const ANALOG_STICKS_BYTE_SIZE = 8;
-const EFFECTS_STATUS_BYTE_SIZE = 1;
+const ANALOG_TRIGGERS_BYTE_SIZE = 2;
+const EFFECTS_STATUS_BYTE_SIZE = 4;
 
-const CONSUMER_WRITE_SECTION_BYTE_SIZE = 64;
+const SETTINGS_SECTION_BYTE_SIZE = 64;
 const DEAZONES_BYTE_SIZE = 8;
 const DIGITAL_TRIGGERS_ACTUATIONS_BYTE_SIZE = 4;
 const DIGITAL_STICKS_ACTUATIONS_BYTE_SIZE = 4;
-const EFFECTS_REGISTERS_BYTE_SIZE = 32;
 
-const GAMEPAD_STATE_BYTE_SIZE =
-  PRODUCER_WRITE_SECTION_BYTE_SIZE + CONSUMER_WRITE_SECTION_BYTE_SIZE;
+const EFFECTS_SECTION_BYTE_SIZE = 64;
+const GENERAL_VIBRATIONS_EFFECT_BYTE_SIZE = 16;
+const TRIGGER_EFFECT_BYTE_SIZE = 16;
+const LIGHTS_EFFECT_BYTE_SIZE = 16;
+
+const GAMEPAD_IMMEDIATE_DATA_BYTE_SIZE =
+  STATE_SECTION_BYTE_SIZE +
+  SETTINGS_SECTION_BYTE_SIZE +
+  EFFECTS_SECTION_BYTE_SIZE;
 
 const GAMEPAD_QUEUE_HEAD_PADDED_BYTE_SIZE = 64;
 const GAMEPAD_QUEUE_TAIL_PADDED_BYTE_SIZE = 64;
@@ -237,23 +283,27 @@ const GAMEPAD_QUEUE_INPUT_FULL_VALUE_BYTE_SIZE = 2;
 const GAMEPAD_QUEUE_INPUT_EVENT_NUMBER_BYTE_SIZE = 2;
 const GAMEPAD_QUEUE_INPUT_TIMESTAMP_BYTE_SIZE = 4;
 
-const PRODUCER_WRITE_SECTION_OFFSET = 0;
-const LAST_UPDATE_OFFSET = PRODUCER_WRITE_SECTION_OFFSET;
-const ANALOG_TRIGGERS_OFFSET = LAST_UPDATE_BYTE_SIZE;
-const DIGITAL_BUTTONS_OFFSET =
-  ANALOG_TRIGGERS_OFFSET + ANALOG_TRIGGERS_BYTE_SIZE;
+const STATE_SECTION_OFFSET = 0;
+const LAST_UPDATE_OFFSET = STATE_SECTION_OFFSET;
+const DIGITAL_BUTTONS_OFFSET = LAST_UPDATE_OFFSET + LAST_UPDATE_BYTE_SIZE;
 const ANALOG_STICKS_OFFSET = DIGITAL_BUTTONS_OFFSET + DIGITAL_BUTTONS_BYTE_SIZE;
-const EFFECTS_STATUS_OFFSET = ANALOG_STICKS_OFFSET + ANALOG_STICKS_BYTE_SIZE;
+const ANALOG_TRIGGERS_OFFSET = ANALOG_STICKS_OFFSET + ANALOG_STICKS_BYTE_SIZE;
+const EFFECTS_STATUS_OFFSET =
+  ANALOG_TRIGGERS_OFFSET + ANALOG_TRIGGERS_BYTE_SIZE;
 
-const CONSUMER_WRITE_SECTION_OFFSET = PRODUCER_WRITE_SECTION_BYTE_SIZE;
-const DEAZONES_OFFSET = CONSUMER_WRITE_SECTION_OFFSET;
+const SETTINGS_SECTION_OFFSET = STATE_SECTION_BYTE_SIZE;
+const DEAZONES_OFFSET = SETTINGS_SECTION_OFFSET;
 const DIGITAL_TRIGGERS_ACTUATIONS_OFFSET = DEAZONES_OFFSET + DEAZONES_BYTE_SIZE;
 const DIGITAL_STICKS_ACTUATIONS_OFFSET =
   DIGITAL_TRIGGERS_ACTUATIONS_OFFSET + DIGITAL_TRIGGERS_ACTUATIONS_BYTE_SIZE;
-const EFFECTS_REGISTERS_OFFSET =
-  DIGITAL_STICKS_ACTUATIONS_OFFSET + DIGITAL_STICKS_ACTUATIONS_BYTE_SIZE;
 
-const GAMEPAD_DIGITAL_QUEUE_OFFSET = GAMEPAD_STATE_BYTE_SIZE;
+const EFFECT_COMMANDS_OFFSET = SETTINGS_SECTION_BYTE_SIZE;
+const GENERAL_VIBRATIONS_EFFECT_OFFSET = EFFECT_COMMANDS_OFFSET;
+const TRIGGER_EFFECT_OFFSET =
+  GENERAL_VIBRATIONS_EFFECT_OFFSET + GENERAL_VIBRATIONS_EFFECT_BYTE_SIZE;
+const LIGHTS_EFFECT_OFFSET = TRIGGER_EFFECT_OFFSET + TRIGGER_EFFECT_BYTE_SIZE;
+
+const GAMEPAD_DIGITAL_QUEUE_OFFSET = GAMEPAD_IMMEDIATE_DATA_BYTE_SIZE;
 const GAMEPAD_ANALOG_QUEUE_OFFSET =
   GAMEPAD_DIGITAL_QUEUE_OFFSET + GAMEPAD_QUEUE_BYTE_SIZE;
 
@@ -276,6 +326,7 @@ export class GamepadController {
   ]);
   #sequentialEventNumber = 0;
   #analogToDigitalActive = 0; // flags for analog buttons treated as digital
+  #listener?: (time: number) => void;
 
   constructor(memory: WebAssembly.Memory) {
     this.#registerHandlers();
@@ -293,7 +344,10 @@ export class GamepadController {
     );
 
     this.watch = this.watch.bind(this);
-    this.watch();
+  }
+
+  addListener(listener: (time: number) => void) {
+    this.#listener = listener;
   }
 
   #registerHandlers() {
@@ -305,9 +359,13 @@ export class GamepadController {
         return;
       }
 
+      if (e.gamepad.mapping !== "standard") {
+        console.error("Unknown gamepad layout");
+      }
+
       this.#initGamepad(index);
       this.#vibrate(e.gamepad, 200);
-      console.log(`Gamepad ${e.gamepad.index} connected.`);
+      console.log(e.gamepad);
     });
 
     // @todo reset all memory for gamepad on disconnect!
@@ -319,7 +377,6 @@ export class GamepadController {
       }
 
       this.#clearGamepad(index);
-      console.log(`Gamepad ${e.gamepad.index} disconnected.`);
     });
   }
 
@@ -329,7 +386,6 @@ export class GamepadController {
     const mask = DIGITAL_BUTTONS_MASKS[31];
     let val = this.#mmio.getUint32(digitalButtonsPos, true) | mask;
     this.#mmio.setUint32(digitalButtonsPos, val, true);
-    console.log({ offset, val });
   }
 
   #clearGamepad(index: number) {
@@ -352,8 +408,9 @@ export class GamepadController {
     this.getData();
     setTimeout(this.watch, POOLING_RATE_MS);
     const time = performance.now() - start;
-    if (time > 1) {
-      console.log(`${time.toFixed(2)} ms`);
+
+    if (this.#listener) {
+      this.#listener(time);
     }
   }
 
@@ -368,48 +425,49 @@ export class GamepadController {
         continue;
       }
 
+      let modified = false;
+      const timestamp = Math.floor(gamepad.timestamp);
+
       const digitalButtonsPos = offset + DIGITAL_BUTTONS_OFFSET;
       let btnVals = this.#mmio.getUint32(digitalButtonsPos, true);
       const oldBtnVals = btnVals;
 
       for (let btn = 0; btn < 16; btn++) {
         const mask = DIGITAL_BUTTONS_MASKS[btn];
-        const btnOldVal = +!!(btnVals & mask);
+        const btnOldValDigital = +!!(btnVals & mask);
 
         if (btn === 6 || btn === 7) {
           const pos = offset + ANALOG_TRIGGERS_OFFSET + btn - 6;
+          const btnOldValAnalog = this.#mmio.getUint8(pos);
           const btnNewVal = triggerToUint8(
             applyDeadzone(0.05, 0.95, gamepad.buttons[btn].value),
           );
 
-          if (btnOldVal === btnNewVal) {
+          if (btnOldValAnalog === btnNewVal) {
             continue;
           }
 
+          modified = true;
           this.#mmio.setUint8(pos, btnNewVal);
 
           const releaseThreshold = 0; // @todo use real value
           const pressThreshold = 0.1; // @todo use real value
 
           if (
-            (btnNewVal >= pressThreshold && btnOldVal === 0) ||
-            (btnNewVal <= releaseThreshold && btnOldVal === 1)
+            (btnNewVal >= pressThreshold && btnOldValDigital === 0) ||
+            (btnNewVal <= releaseThreshold && btnOldValDigital === 1)
           ) {
             btnVals ^= mask;
           }
         } else {
           let btnNewVal = gamepad.buttons[btn].value;
 
-          if (btnOldVal === btnNewVal) {
+          if (btnOldValDigital === btnNewVal) {
             continue;
           }
 
-          this.#addToButtonsQueue(
-            gamepadIdx,
-            btn,
-            btnNewVal,
-            gamepad.timestamp,
-          );
+          modified = true;
+          this.#addToButtonsQueue(gamepadIdx, btn, btnNewVal, timestamp);
           btnVals ^= mask;
         }
       }
@@ -455,21 +513,23 @@ export class GamepadController {
         newY = axisToInt16(newY);
 
         if (oldX !== newX) {
-          this.#addToAxesQueue(gamepadIdx, axisX, newX, gamepad.timestamp);
+          modified = true;
+          this.#addToAxesQueue(gamepadIdx, axisX, newX, timestamp);
           this.#mmio.setInt16(posX, newX, true);
         }
 
         if (oldY !== newY) {
-          this.#addToAxesQueue(gamepadIdx, axisY, newY, gamepad.timestamp);
+          modified = true;
+          this.#addToAxesQueue(gamepadIdx, axisY, newY, timestamp);
           this.#mmio.setInt16(posY, newY, true);
         }
       }
 
-      if (btnVals !== oldBtnVals) {
-        console.log((btnVals >>> 0).toString(2).padStart(32, "0"));
-      }
-
       this.#lastUpdate.set(gamepad.index, gamepad.timestamp);
+
+      if (modified) {
+        this.#mmio.setUint32(offset + LAST_UPDATE_OFFSET, timestamp, true);
+      }
     }
   }
 
@@ -486,8 +546,7 @@ export class GamepadController {
     value: number,
     timestamp: number,
   ) {
-    timestamp = Math.floor(timestamp);
-    console.log({ gamepadIndex, buttonId, value, timestamp });
+    // console.log({ gamepadIndex, buttonId, value, timestamp });
     return;
 
     // const offset = gamepadIndex * BYTE_SIZE_PER_GAMEPAD + GAMEPAD_QUEUE_OFFSET;
@@ -542,8 +601,7 @@ export class GamepadController {
     value: number,
     timestamp: number,
   ) {
-    timestamp = Math.floor(timestamp);
-    console.log({ gamepadIndex, axisId, value, timestamp });
+    // console.log({ gamepadIndex, axisId, value, timestamp });
     return;
   }
 
