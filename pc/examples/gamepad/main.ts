@@ -67,6 +67,28 @@ gampepadController.addListener((time) => {
   const buttonsQueueHead = gamepadsView.getUint32(128, true);
   const buttonsQueueTail = gamepadsView.getUint32(192, true);
 
+  const buttonsQueueEntries: {
+    buttonId: number;
+    status: number;
+    sequentialNumber: number;
+    timestamp: number;
+  }[] = [];
+
+  for (let i = 0; i < 32; i++) {
+    const pos = 320 + i * 8;
+    const buttonId = gamepadsView.getUint8(pos);
+    const status = gamepadsView.getUint8(pos + 1);
+    const sequentialNumber = gamepadsView.getUint16(pos + 2, true);
+    const timestamp = gamepadsView.getUint32(pos + 4);
+
+    buttonsQueueEntries.push({
+      buttonId,
+      status,
+      sequentialNumber,
+      timestamp,
+    });
+  }
+
   $generalStats.textContent = `Connected: ${buttonsFlags !== 0} | Input processing time: ${time.toFixed(2)} ms`;
 
   $gamepadState.textContent = `
@@ -91,13 +113,13 @@ gampepadController.addListener((time) => {
     ${+!!(buttonsFlags & 0b00000000000000000010000000000000)} - Button 13   (D-Pad Down)
     ${+!!(buttonsFlags & 0b00000000000000000100000000000000)} - Button 14   (D-Pad Left)
     ${+!!(buttonsFlags & 0b00000000000000001000000000000000)} - Button 15   (D-Pad Right)
-    ${+!!(buttonsFlags & 0b00000000000000010000000000000000)} - Button 16   (reserved - Center button)
-    ${+!!(buttonsFlags & 0b00000000000000100000000000000000)} - Button 17   (reserved)
-    ${+!!(buttonsFlags & 0b00000000000001000000000000000000)} - Button 18   (reserved)
-    ${+!!(buttonsFlags & 0b00000000000010000000000000000000)} - Button 19   (Up)
-    ${+!!(buttonsFlags & 0b00000000000100000000000000000000)} - Button 20   (Down)
-    ${+!!(buttonsFlags & 0b00000000001000000000000000000000)} - Button 21   (Left)
-    ${+!!(buttonsFlags & 0b00000000010000000000000000000000)} - Button 22   (Right)
+    ${+!!(buttonsFlags & 0b00000000000000010000000000000000)} - Button 16   (Center / Home button)
+    ${+!!(buttonsFlags & 0b00000000000000100000000000000000)} - Button 17   (Action 1 / OK - simplified)
+    ${+!!(buttonsFlags & 0b00000000000001000000000000000000)} - Button 18   (Action 2 / Back - simplified)
+    ${+!!(buttonsFlags & 0b00000000000010000000000000000000)} - Button 19   (Up - simplified)
+    ${+!!(buttonsFlags & 0b00000000000100000000000000000000)} - Button 20   (Down - simplified)
+    ${+!!(buttonsFlags & 0b00000000001000000000000000000000)} - Button 21   (Left - simplified)
+    ${+!!(buttonsFlags & 0b00000000010000000000000000000000)} - Button 22   (Right - simplified)
     ${+!!(buttonsFlags & 0b00000000100000000000000000000000)} - Button 23   (Left Stick Up)
     ${+!!(buttonsFlags & 0b00000001000000000000000000000000)} - Button 24   (Left Stick Down)
     ${+!!(buttonsFlags & 0b00000010000000000000000000000000)} - Button 25   (Left Stick Left)
@@ -169,6 +191,7 @@ gampepadController.addListener((time) => {
     Head: 0x${buttonsQueueHead.toString(16).padStart(8, "0")} | ${String(buttonsQueueHead).padStart(2, " ")}
     Tail: 0x${buttonsQueueTail.toString(16).padStart(8, "0")} | ${String(buttonsQueueTail).padStart(2, " ")}
 
+    ${buttonsQueueEntries.map((x) => JSON.stringify(x)).join("\n")}
     
   `;
   $axesQueue.textContent = `
