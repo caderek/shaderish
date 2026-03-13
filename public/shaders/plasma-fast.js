@@ -1,5 +1,5 @@
 //import { pack } from "http://localhost:5173/lib/fast-util.js";
-import { pack } from "https://shaderish.pages.dev/fast-util.js";
+import { pack } from "https://shaderish.pages.dev/lib/fast-util.js";
 
 // --- PRE-COMPUTATION (Run once) ---
 const TABLE_SIZE = 4096;
