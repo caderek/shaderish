@@ -1,4 +1,4 @@
-import { color } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * Waves shader
@@ -12,8 +12,14 @@ import { color } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} my - Normalized mouse positon (-1 to 1)
  * @returns {number}
  */
-export function fragment(x, y, t, w, h, mx, my) {
-  x = x * (w / h);
+export function fragment(pos, res, t, mouse) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
+  let mx = mouse[0];
+  let my = mouse[1];
+
   const d = Math.sqrt((x - mx) ** 2 + (y + my) ** 2);
 
   const c = Math.sin(d * 10 - t * 5) * 0.5 + 0.5;
@@ -22,5 +28,5 @@ export function fragment(x, y, t, w, h, mx, my) {
   const b = y;
   const a = 1.0;
 
-  return color(r, g, b, a);
+  return pack(r, g, b, a);
 }

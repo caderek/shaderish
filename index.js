@@ -19,7 +19,7 @@ setFooter(search);
 
 const [w, h] = (search.get("res") ?? "640x360").split("x").map(Number);
 
-const shaderName = search.get("shader") ?? "plasma";
+const shaderName = search.get("shader") ?? "plasma-fast";
 
 const [tileSizeX, tileSizeY] = (search.get("tile") ?? "8x8")
   .split("x")
@@ -30,7 +30,7 @@ const url = await createShaderUrl(shaderName);
 const state = {
   play: true,
 };
-const MAX_WORKERS = 8; //Infinity;
+const MAX_WORKERS = 7; //Infinity;
 const MULTIPLE = Math.min(
   Math.floor(window.innerWidth / w),
   Math.floor(window.innerHeight / h),

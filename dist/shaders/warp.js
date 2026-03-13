@@ -1,4 +1,4 @@
-import { color } from "https://shaderish.pages.dev/lib/util.js";
+import { pack } from "http://localhost:5173/lib/fast-util.js";
 
 /**
  * "Bumped Sinusoidal Warp" (JS Port)
@@ -11,9 +11,11 @@ import { color } from "https://shaderish.pages.dev/lib/util.js";
  * @param {number} y - Normalized coordinate (-1 to 1)
  * @param {Float32Array} uniformsbuffewr - [time, width, height, ...]
  */
-export function fragment(x, y, t, w, h) {
-  // 1. Aspect Correction (User's preferred method)
-  x = x * (w / h);
+export function fragment(pos, res, t) {
+  let w = res[0];
+  let h = res[1];
+  let x = (2 * pos[0] - w) / h;
+  let y = -(2 * pos[1] - h) / h;
 
   // 2. Coordinate Setup
   // Original: vec3 sp = vec3(uv, 0);
@@ -155,7 +157,7 @@ export function fragment(x, y, t, w, h) {
   colB += colB * refPow * 1.0 * 3.0;
 
   // 8. Gamma Correction (sqrt)
-  return color(Math.sqrt(colR), Math.sqrt(colG), Math.sqrt(colB), 1.0);
+  return pack(Math.sqrt(colR), Math.sqrt(colG), Math.sqrt(colB), 1.0);
 }
 
 // --- Helper Functions ---

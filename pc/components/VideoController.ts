@@ -97,6 +97,7 @@ export class VideoController {
 
     for (let i = 0; i < TEXTMODE_CELLS * 2; i += 2, cell++) {
       const char = text[i];
+      //const char = text[i] >= 0x21 && text[i] <= 0x7e ? text[i] + 128 : text[i];
       const style = text[i + 1];
 
       const fg = style & 0b1111;
